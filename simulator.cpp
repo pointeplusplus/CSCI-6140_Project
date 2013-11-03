@@ -76,7 +76,7 @@ double genrand_real2(void);
 /********************** File sim.c **********************************/
 /* can be separated from header.c by using include below  ***********/
 /* #include "header.h"                                             **/
-void main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
   double global_time=0.0;
   int process, event;
@@ -109,6 +109,7 @@ void main(int argc, char *argv[])
     }
   }
   stats();
+  return 0;
 }
 
 /********************************************************************/
