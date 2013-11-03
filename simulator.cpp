@@ -51,6 +51,8 @@ struct Events {                              /**** Event list           ****/
 	double time[NS]; 
 	int task[NS], event[NS];
 } elist;
+
+//Tch is the time of the last change (updated to global time on aquiring and freeing)
 struct Queue {  /**** Queues: 0 - memory queue, 1 - CPU queue, 2 - Disk queue*/
 	int head, tail, q, n, task[NS];
 	double ws, tch, ts, tentry[NS]; 
@@ -118,7 +120,7 @@ int main(int argc, char *argv[])
 /********************************************************************/
 /********************* Event Functions ******************************/
 /********************************************************************/
-
+//If there is space in memory, add to memory.  Otherwise, go to the memory (eligible) queue
 void Process_RequestMemory(int process, double time)
 {
 /**** Create a Process_RequestCPU event or place a task in memory queue      ****/
