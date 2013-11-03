@@ -22,11 +22,14 @@
 #define CPUQueue 1
 #define DiskQueue 2
 #define TotQueues 3
+
+//Event types mapped to integers (used in create_event)
 #define RequestMemory 0
 #define RequestCPU 1
 #define ReleaseCPU 2
 #define RequestDisk 3
 #define ReleaseDisk 4
+
 #define CPU 0
 #define DISK 1
 #define EMPTY -1
@@ -231,90 +234,90 @@ int remove_from_queue(int current_queue, double time)
 void place_in_queue(int process, double time, int current_queue)
 {
 /**** Update statistics for the queue                               ****/
-  queue[current_queue].ts+=
-    (time-queue[current_queue].tch)*queue[current_queue].q;
-  queue[current_queue].q++;
-  queue[current_queue].n++;
-  queue[current_queue].tch=time;
-/**** Place the process at the tail of queue and move the tail       ****/
-  queue[current_queue].task[queue[current_queue].tail]=process;
-  queue[current_queue].tentry[queue[current_queue].tail]=time;
-  queue[current_queue].tail=(queue[current_queue].tail+1)%N;
+	queue[current_queue].ts+=
+    	(time-queue[current_queue].tch)*queue[current_queue].q;
+  	queue[current_queue].q++;
+  	queue[current_queue].n++;
+  	queue[current_queue].tch=time;
+	/**** Place the process at the tail of queue and move the tail       ****/
+  	queue[current_queue].task[queue[current_queue].tail]=process;
+  	queue[current_queue].tentry[queue[current_queue].tail]=time;
+  	queue[current_queue].tail=(queue[current_queue].tail+1)%N;
 }
 
 void create_event(int process, int event, double time, int priority)
 {
-  int i, notdone=1, place=elist.tail;
+	int i, notdone=1, place=elist.tail;
   
 /**** Move all more futuristic tasks by one position                ****/
-  for(i=(elist.tail+N-1)%N; notdone & (elist.q>0); i=(i+N-1)%N) {
-    if ((elist.time[i]<time) | ((priority==LowPriority) & (elist.time[i]==time))) 
-      notdone=0;
-    else {
-      elist.time[place]=elist.time[i];
-      elist.task[place]=elist.task[i];
-      elist.event[place]=elist.event[i];
-      place=i;
-    }
-    if (i==elist.head) notdone=0;
-  }
+//If this were a list this wouldn't have to happen at all
+	for(i=(elist.tail+N-1)%N; notdone & (elist.q>0); i=(i+N-1)%N) {
+    	if ((elist.time[i]<time) | ((priority==LowPriority) & (elist.time[i]==time))) 
+      		notdone=0;
+    	else {
+      		elist.time[place]=elist.time[i];
+      		elist.task[place]=elist.task[i];
+      		elist.event[place]=elist.event[i];
+      		place=i;
+    	}
+    	if (i==elist.head) notdone=0;
+  	}
 /**** Place the argument event in the newly created space           ****/
-  elist.time[place]=time;
-  elist.task[place]=process;
-  elist.event[place]=event;
-  elist.tail=(elist.tail+1)%N;
-  elist.q++;
+  	elist.time[place]=time;
+  	elist.task[place]=process;
+  	elist.event[place]=event;
+  	elist.tail=(elist.tail+1)%N;
+  	elist.q++;
 }
 
 void init()
 {
-  int i;
+  	int i;
 
 /**** Initialize structures                                         ****/
-  elist.head=elist.tail=elist.q=0;
-  for(i=0;i<TotQueues;i++) {
-    queue[i].head=queue[i].tail=queue[i].q=queue[i].n=0;
-    queue[i].ws=queue[i].ts=0.0;
-    queue[i].tch=0;
-  }
-  for(i=0;i<2;i++) {
-    server[i].busy=0;
-    server[i].tch=server[i].tser=0.0;
-  }
-  for(i=0;i<N;i++) {
-/**** Create a new task                                          ****/
-    task[i].tcpu=random_exponential(TCPU);
-    task[i].tquantum  =   TQuantum;
-    task[i].tinterrequest = random_exponential(TInterRequest);
-    task[i].start=random_exponential(TThink);
-    create_event(i, RequestMemory, task[i].start, LowPriority);
+  	elist.head=elist.tail=elist.q=0;
+  	for(i=0;i<TotQueues;i++) {
+    	queue[i].head=queue[i].tail=queue[i].q=queue[i].n=0;
+    	queue[i].ws=queue[i].ts=0.0;
+    	queue[i].tch=0;
+  	}
+  	for(i=0;i<2;i++) {
+    	server[i].busy=0;
+    	server[i].tch=server[i].tser=0.0;
+  	}
+  	for(i=0;i<N;i++) {
+		/**** Create a new task                                          ****/
+    	task[i].tcpu=random_exponential(TCPU);
+    	task[i].tquantum  =   TQuantum;
+    	task[i].tinterrequest = random_exponential(TInterRequest);
+    	task[i].start=random_exponential(TThink);
+    	create_event(i, RequestMemory, task[i].start, LowPriority);
   }
 }
 
 void stats()
 {
 /**** Update utilizations                                          ****/
-  if (server[CPU].busy==1) server[CPU].tser+=(TTotal-server[CPU].tch);
-  if (server[DISK].busy==1) server[DISK].tser+=(TTotal-server[DISK].tch);
+	if (server[CPU].busy==1) server[CPU].tser+=(TTotal-server[CPU].tch);
+  	if (server[DISK].busy==1) server[DISK].tser+=(TTotal-server[DISK].tch);
 
-/**** Print statistics                                             ****/
+	/**** Print statistics                                             ****/
 
-  printf("System definitions: N %2d MPL %2d TTotal %6.0f\n",N, MPL, TTotal);
-  printf("utilizations are: CPU %5.2f Disk %5.2f\n", 
-	 100.0*server[0].tser/TTotal, 100.0*server[1].tser/TTotal);
-  printf("mean waiting time in qe %5.2f qCPU %5.2f qDisk %5.2f\n", 
+ 	printf("System definitions: N %2d MPL %2d TTotal %6.0f\n",N, MPL, TTotal);
+  	printf("utilizations are: CPU %5.2f Disk %5.2f\n", 100.0*server[0].tser/TTotal, 100.0*server[1].tser/TTotal);
+  	printf("mean waiting time in qe %5.2f qCPU %5.2f qDisk %5.2f\n", 
 	 queue[MemoryQueue].ws?queue[MemoryQueue].ws/(queue[MemoryQueue].n-queue[MemoryQueue].q):0.0,
 	 queue[CPUQueue].ws?queue[CPUQueue].ws/(queue[CPUQueue].n-queue[CPUQueue].q):0.0,
          queue[DiskQueue].ws?queue[DiskQueue].ws/(queue[DiskQueue].n-queue[DiskQueue].q):0.0);
-  printf("mean queue length in qe %5.2f qCPU %5.2f qDisk %5.2f\n", 
+  	printf("mean queue length in qe %5.2f qCPU %5.2f qDisk %5.2f\n", 
 	 queue[MemoryQueue].tch?queue[MemoryQueue].ts/queue[MemoryQueue].tch:0.0,
 	 queue[CPUQueue].tch?queue[CPUQueue].ts/queue[CPUQueue].tch:0.0, 
 	 queue[DiskQueue].tch?queue[DiskQueue].ts/queue[DiskQueue].tch:0.0);
-  printf("number of visits in qe  %5d qCPU %5d qDisk %5d\n", 
+  	printf("number of visits in qe  %5d qCPU %5d qDisk %5d\n", 
 	 queue[0].n-queue[0].q,
 	 queue[CPUQueue].n-queue[CPUQueue].q, 
 	 queue[DiskQueue].n-queue[DiskQueue].q);
-  printf("average response time   %5.2f processes finished %5d\n",
+  	printf("average response time   %5.2f processes finished %5d\n",
 	 sum_response_time/finished_tasks, finished_tasks); 
 }
 
@@ -322,48 +325,48 @@ void stats()
    
 void init_genrand(unsigned long s) {
   
-  mt[0]= s & 0xffffffffUL;
-  for (mti=1; mti<Nrnd; mti++) {
-    mt[mti] = (1812433253UL * (mt[mti-1] ^ (mt[mti-1] >> 30)) + mti); 
-    mt[mti] &= 0xffffffffUL;
+	mt[0]= s & 0xffffffffUL;
+  	for (mti=1; mti<Nrnd; mti++) {
+    	mt[mti] = (1812433253UL * (mt[mti-1] ^ (mt[mti-1] >> 30)) + mti); 
+    	mt[mti] &= 0xffffffffUL;
   }
 }
 
 unsigned long genrand_int32(void) {
-  unsigned long y;
-  static unsigned long mag01[2]={0x0UL, MATRIX_A};
-  if (mti >= Nrnd) { 
-    int kk;
+	unsigned long y;
+  	static unsigned long mag01[2]={0x0UL, MATRIX_A};
+  	if (mti >= Nrnd) { 
+    	int kk;
     
-    if (mti == Nrnd+1) init_genrand(5489UL); 
+    	if (mti == Nrnd+1) init_genrand(5489UL); 
 
-    for (kk=0;kk<Nrnd-Mrnd;kk++) {
-      y = (mt[kk]&UPPER_MASK)|(mt[kk+1]&LOWER_MASK);
-      mt[kk] = mt[kk+Mrnd] ^ (y >> 1) ^ mag01[y & 0x1UL];
-    }
-    for (;kk<Nrnd-1;kk++) {
-      y = (mt[kk]&UPPER_MASK)|(mt[kk+1]&LOWER_MASK);
-      mt[kk] = mt[kk+(Mrnd-Nrnd)] ^ (y >> 1) ^ mag01[y & 0x1UL];
-    }
-    y = (mt[Nrnd-1]&UPPER_MASK)|(mt[0]&LOWER_MASK);
-    mt[Nrnd-1] = mt[Mrnd-1] ^ (y >> 1) ^ mag01[y & 0x1UL];
+    	for (kk=0;kk<Nrnd-Mrnd;kk++) {
+      		y = (mt[kk]&UPPER_MASK)|(mt[kk+1]&LOWER_MASK);
+      		mt[kk] = mt[kk+Mrnd] ^ (y >> 1) ^ mag01[y & 0x1UL];
+    	}
+    	for (;kk<Nrnd-1;kk++) {
+      		y = (mt[kk]&UPPER_MASK)|(mt[kk+1]&LOWER_MASK);
+      		mt[kk] = mt[kk+(Mrnd-Nrnd)] ^ (y >> 1) ^ mag01[y & 0x1UL];
+    	}
+    	y = (mt[Nrnd-1]&UPPER_MASK)|(mt[0]&LOWER_MASK);
+    	mt[Nrnd-1] = mt[Mrnd-1] ^ (y >> 1) ^ mag01[y & 0x1UL];
     
-    mti = 0;
-  }
+    	mti = 0;
+  	}
   
-  y = mt[mti++];
-  y ^= (y >> 11);
-  y ^= (y << 7) & 0x9d2c5680UL;
-  y ^= (y << 15) & 0xefc60000UL;
-  y ^= (y >> 18);
+  	y = mt[mti++];
+  	y ^= (y >> 11);
+  	y ^= (y << 7) & 0x9d2c5680UL;
+  	y ^= (y << 15) & 0xefc60000UL;
+  	y ^= (y >> 18);
   
-  return y;
+  	return y;
 }
 
 double genrand_real2(void) {
-  return genrand_int32()*(1.0/4294967296.0); 
+	return genrand_int32()*(1.0/4294967296.0); 
 }
 
 double random_exponential (double y) {
-  return -y*log(genrand_real2());
+ 	return -y*log(genrand_real2());
 }
