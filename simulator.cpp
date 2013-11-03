@@ -47,19 +47,29 @@ static int mti=Nrnd+1;             /* mti==Nrnd+1 means mt[Nrnd] is not initiali
 /* simulator data structurs */
 struct Task { double tcpu,tquantum,tinterrequest,start; } task[NS];  /**** Job list       ****/
 struct Events {                              /**** Event list           ****/
-	int head, tail, q;
+	int head;
+	int tail;
+	int q_length;
 	double time[NS]; 
 	int task[NS], event[NS];
 } elist;
 
-//Tch is the time of the last change (updated to global time on aquiring and freeing)
+
 struct Queue {  /**** Queues: 0 - memory queue, 1 - CPU queue, 2 - Disk queue*/
-	int head, tail, q, n, task[NS];
-	double ws, tch, ts, tentry[NS]; 
+	int head;
+	int tail;
+	int q_length; //current length of the queue (was q)
+	int n; //number of times anything has entered the queue (n++ on entry)
+	int task[NS];
+	double waiting_time; //accumulated waiting time (was ws)
+	double change_time; //time of the last change (updated to global time on aquiring and freeing) (was tch)
+	double ts; //total time EVERYTHING has been waiting in the queue: Ts= Ts+ (TG‐ change_time)*q_length
+	double entry_times[NS]; //entry times for N processes (NS = N) (was tentry[NS])
 } queue[3];
 struct Device {                              /***  Devices: 0 - CPU, 1 - Disk*/
 	int busy;
-	double tch, tser;
+	double change_time;
+	double tser;
 } server[2];
 
 unsigned short seeds[3];
@@ -99,7 +109,7 @@ int main(int argc, char *argv[])
     global_time = elist.time[elist.head];
     event = elist.event[elist.head];
     elist.head=(elist.head+1)%N;
-    elist.q--;
+    elist.q_length--;
 /***** Execute the event e ******/
     switch(event) {
     case RequestMemory: Process_RequestMemory(process, global_time);
@@ -139,7 +149,7 @@ void Process_RequestCPU(int process, double time)
   if (server[CPU].busy) place_in_queue(process,time,CPUQueue);
   else {
     server[CPU].busy=1;
-    server[CPU].tch=time;
+    server[CPU].change_time=time;
 /**** Find the time of leaving CPU                               ****/
     if (task[process].tcpu<task[process].tquantum) release_time=task[process].tcpu;
     else release_time=task[process].tquantum;
@@ -158,7 +168,7 @@ void Process_ReleaseCPU(int process, double time)
 
 /**** Update CPU statistics                                            ****/
   server[CPU].busy=0;
-  server[CPU].tser+=(time-server[CPU].tch);
+  server[CPU].tser+=(time-server[CPU].change_time);
   queue_head=remove_from_queue(CPUQueue, time);           /* remove head of CPU queue ****/
   if (queue_head!=EMPTY) create_event(queue_head, RequestCPU, time, HighPriority);
 /**** Depending on reason for leaving CPU, select the next event       ****/
@@ -191,7 +201,7 @@ void Process_RequestDisk(int process, double time)
   if (server[DISK].busy) place_in_queue(process,time,DiskQueue);
   else {
     server[DISK].busy=1;
-    server[DISK].tch=time;
+    server[DISK].change_time=time;
     create_event(process, ReleaseDisk, time+random_exponential(TDiskService), LowPriority);
   }
 }
@@ -201,7 +211,7 @@ void Process_ReleaseDisk(int process, double time)
   int queue_head;
 /**** Update statistics for Disk and create Process_RequestCPU event         ****/
   server[DISK].busy=0;
-  server[DISK].tser+=(time-server[DISK].tch);
+  server[DISK].tser+=(time-server[DISK].change_time);
   queue_head=remove_from_queue(DiskQueue, time);
   if (queue_head!=EMPTY) 
     create_event(queue_head, RequestDisk, time, HighPriority);
@@ -217,15 +227,16 @@ int remove_from_queue(int current_queue, double time)
   int process;
 
 /**** If queue not empty, remove the head of the queue              ****/
-  if (queue[current_queue].q>0) {
+  if (queue[current_queue].q_length>0) {
     process=queue[current_queue].task[queue[current_queue].head];
 /**** Update statistics for the queue                               ****/
-    queue[current_queue].ws+=time
-      -queue[current_queue].tentry[queue[current_queue].head];
+    queue[current_queue].waiting_time+=time
+      -queue[current_queue].entry_times
+    [queue[current_queue].head];
     queue[current_queue].ts+=
-      (time-queue[current_queue].tch)*queue[current_queue].q;
-    queue[current_queue].q--;
-    queue[current_queue].tch=time;
+      (time-queue[current_queue].change_time)*queue[current_queue].q_length;
+    queue[current_queue].q_length--;
+    queue[current_queue].change_time=time;
 /**** Create a new event for the task at the head and move the head ****/
     queue[current_queue].head=(queue[current_queue].head+1)%N;
     return(process);
@@ -237,13 +248,14 @@ void place_in_queue(int process, double time, int current_queue)
 {
 /**** Update statistics for the queue                               ****/
 	queue[current_queue].ts+=
-    	(time-queue[current_queue].tch)*queue[current_queue].q;
-  	queue[current_queue].q++;
+    	(time-queue[current_queue].change_time)*queue[current_queue].q_length;
+  	queue[current_queue].q_length++;
   	queue[current_queue].n++;
-  	queue[current_queue].tch=time;
+  	queue[current_queue].change_time=time;
 	/**** Place the process at the tail of queue and move the tail       ****/
   	queue[current_queue].task[queue[current_queue].tail]=process;
-  	queue[current_queue].tentry[queue[current_queue].tail]=time;
+  	queue[current_queue].entry_times
+ [queue[current_queue].tail]=time;
   	queue[current_queue].tail=(queue[current_queue].tail+1)%N;
 }
 
@@ -253,7 +265,7 @@ void create_event(int process, int event, double time, int priority)
   
 /**** Move all more futuristic tasks by one position                ****/
 //If this were a list this wouldn't have to happen at all
-	for(i=(elist.tail+N-1)%N; notdone & (elist.q>0); i=(i+N-1)%N) {
+	for(i=(elist.tail+N-1)%N; notdone & (elist.q_length>0); i=(i+N-1)%N) {
     	if ((elist.time[i]<time) | ((priority==LowPriority) & (elist.time[i]==time))) 
       		notdone=0;
     	else {
@@ -269,7 +281,7 @@ void create_event(int process, int event, double time, int priority)
   	elist.task[place]=process;
   	elist.event[place]=event;
   	elist.tail=(elist.tail+1)%N;
-  	elist.q++;
+  	elist.q_length++;
 }
 
 void init()
@@ -277,15 +289,15 @@ void init()
   	int i;
 
 /**** Initialize structures                                         ****/
-  	elist.head=elist.tail=elist.q=0;
+  	elist.head=elist.tail=elist.q_length=0;
   	for(i=0;i<TotQueues;i++) {
-    	queue[i].head=queue[i].tail=queue[i].q=queue[i].n=0;
-    	queue[i].ws=queue[i].ts=0.0;
-    	queue[i].tch=0;
+    	queue[i].head=queue[i].tail=queue[i].q_length=queue[i].n=0;
+    	queue[i].waiting_time=queue[i].ts=0.0;
+    	queue[i].change_time=0;
   	}
   	for(i=0;i<2;i++) {
     	server[i].busy=0;
-    	server[i].tch=server[i].tser=0.0;
+    	server[i].change_time=server[i].tser=0.0;
   	}
   	for(i=0;i<N;i++) {
 		/**** Create a new task                                          ****/
@@ -300,25 +312,25 @@ void init()
 void stats()
 {
 /**** Update utilizations                                          ****/
-	if (server[CPU].busy==1) server[CPU].tser+=(TTotal-server[CPU].tch);
-  	if (server[DISK].busy==1) server[DISK].tser+=(TTotal-server[DISK].tch);
+	if (server[CPU].busy==1) server[CPU].tser+=(TTotal-server[CPU].change_time);
+  	if (server[DISK].busy==1) server[DISK].tser+=(TTotal-server[DISK].change_time);
 
 	/**** Print statistics                                             ****/
 
  	printf("System definitions: N %2d MPL %2d TTotal %6.0f\n",N, MPL, TTotal);
   	printf("utilizations are: CPU %5.2f Disk %5.2f\n", 100.0*server[0].tser/TTotal, 100.0*server[1].tser/TTotal);
   	printf("mean waiting time in qe %5.2f qCPU %5.2f qDisk %5.2f\n", 
-	 queue[MemoryQueue].ws?queue[MemoryQueue].ws/(queue[MemoryQueue].n-queue[MemoryQueue].q):0.0,
-	 queue[CPUQueue].ws?queue[CPUQueue].ws/(queue[CPUQueue].n-queue[CPUQueue].q):0.0,
-         queue[DiskQueue].ws?queue[DiskQueue].ws/(queue[DiskQueue].n-queue[DiskQueue].q):0.0);
+	 queue[MemoryQueue].waiting_time?queue[MemoryQueue].waiting_time/(queue[MemoryQueue].n-queue[MemoryQueue].q_length):0.0,
+	 queue[CPUQueue].waiting_time?queue[CPUQueue].waiting_time/(queue[CPUQueue].n-queue[CPUQueue].q_length):0.0,
+         queue[DiskQueue].waiting_time?queue[DiskQueue].waiting_time/(queue[DiskQueue].n-queue[DiskQueue].q_length):0.0);
   	printf("mean queue length in qe %5.2f qCPU %5.2f qDisk %5.2f\n", 
-	 queue[MemoryQueue].tch?queue[MemoryQueue].ts/queue[MemoryQueue].tch:0.0,
-	 queue[CPUQueue].tch?queue[CPUQueue].ts/queue[CPUQueue].tch:0.0, 
-	 queue[DiskQueue].tch?queue[DiskQueue].ts/queue[DiskQueue].tch:0.0);
+	 queue[MemoryQueue].change_time?queue[MemoryQueue].ts/queue[MemoryQueue].change_time:0.0,
+	 queue[CPUQueue].change_time?queue[CPUQueue].ts/queue[CPUQueue].change_time:0.0, 
+	 queue[DiskQueue].change_time?queue[DiskQueue].ts/queue[DiskQueue].change_time:0.0);
   	printf("number of visits in qe  %5d qCPU %5d qDisk %5d\n", 
-	 queue[0].n-queue[0].q,
-	 queue[CPUQueue].n-queue[CPUQueue].q, 
-	 queue[DiskQueue].n-queue[DiskQueue].q);
+	 queue[0].n-queue[0].q_length,
+	 queue[CPUQueue].n-queue[CPUQueue].q_length, 
+	 queue[DiskQueue].n-queue[DiskQueue].q_length);
   	printf("average response time   %5.2f processes finished %5d\n",
 	 sum_response_time/finished_tasks, finished_tasks); 
 }
