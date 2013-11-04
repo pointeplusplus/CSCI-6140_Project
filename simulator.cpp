@@ -1,6 +1,8 @@
 /********************************************************************/
 /*********************************** File header.h ******************/
 /********************************************************************/
+#include <iostream>
+
 /* for random number generator */
 #define Nrnd 624
 #define Mrnd 397
@@ -46,6 +48,7 @@ static int mti=Nrnd+1;             /* mti==Nrnd+1 means mt[Nrnd] is not initiali
 
 /* simulator data structurs */
 struct Task { double tcpu,tquantum,tinterrequest,start; } task[NS];  /**** Job list       ****/
+
 struct Events {                              /**** Event list           ****/
 	int head;
 	int tail;
@@ -66,6 +69,7 @@ struct Queue {  /**** Queues: 0 - memory queue, 1 - CPU queue, 2 - Disk queue*/
 	double ts; //total time EVERYTHING has been waiting in the queue: Ts= Ts+ (TG‐ change_time)*q_length
 	double entry_times[NS]; //entry times for N processes (NS = N) (was tentry[NS])
 } queue[3];
+
 struct Device {                              /***  Devices: 0 - CPU, 1 - Disk*/
 	int busy;
 	double change_time;
@@ -262,6 +266,7 @@ void place_in_queue(int process, double time, int current_queue)
 void create_event(int process, int event, double time, int priority)
 {
 	int i, notdone=1, place=elist.tail;
+
   
 /**** Move all more futuristic tasks by one position                ****/
 //If this were a list this wouldn't have to happen at all
