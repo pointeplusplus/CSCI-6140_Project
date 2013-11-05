@@ -15,14 +15,13 @@
 #define NS 9001
 #define TCPU 40
 #define TQuantum 100
-#define TInterRequest 0.04
+#define TInterRequest 16 //this is the i/o request time
 #define TDiskService 10
 #define TThink 8
 #define TTS 1000000
 
 //Parameters given in the lecture slide
-#define context_switich_time 0.5 //context switching time
-#define TT 
+#define context_switich_time 0.5 //context switching times
 
 #define MemoryQueue 0
 #define CPUQueue 1
@@ -51,23 +50,27 @@ static unsigned long mt[Nrnd];     /* the array for the state vector  */
 static int mti=Nrnd+1;             /* mti==Nrnd+1 means mt[Nrnd] is not initialized */
 
 /* simulator data structurs */
-struct Task { 
+class Task { 
 	double tcpu;
 	double tquantum;
 	double tinterrequest;
 	double start; 
-} task[NS];  /**** Job list       ****/
+};  /**** Job list       ****/
 
-struct Events {                              /**** Event list           ****/
+Task task[NS];
+Task parallel_task[6];
+
+class Events {                              /**** Event list           ****/
 	int head;
 	int tail;
 	int q_length;
 	double time[NS]; 
 	int task[NS], event[NS];
-} event_list;
+};
 
+Event event_list;
 
-struct Queue {  /**** Queues: 0 - memory queue, 1 - CPU queue, 2 - Disk queue*/
+class Queue {  /**** Queues: 0 - memory queue, 1 - CPU queue, 2 - Disk queue*/
 	int head;
 	int tail;
 	int q_length; //current length of the queue (was q)
@@ -77,13 +80,17 @@ struct Queue {  /**** Queues: 0 - memory queue, 1 - CPU queue, 2 - Disk queue*/
 	double change_time; //time of the last change (updated to global time on aquiring and freeing) (was tch)
 	double ts; //total time EVERYTHING has been waiting in the queue: Ts= Ts+ (TG‐ change_time)*q_length
 	double entry_times[NS]; //entry times for N processes (NS = N) (was tentry[NS])
-} queue[3];
+};
+
+Queue queue[3];
 
 struct Device {                              /***  Devices: 0 - CPU, 1 - Disk*/
 	int busy;
 	double change_time;
 	double tser;
-} server[2];
+};
+
+Device server[2];
 
 unsigned short seeds[3];
 int inmemory=0, finished_tasks=0, MPL=MS, N=NS; /* inmemory, actual number of tasks in memory ****/
@@ -319,7 +326,16 @@ void init()
     	task[i].tinterrequest = random_exponential(TInterRequest);
     	task[i].start=random_exponential(TThink);
     	create_event(i, RequestMemory, task[i].start, LowPriority);
-  }
+	  }
+	//add parallel processes
+	for(i=0;i<6;i++) {
+		/**** Create a new task                                          ****/
+		parallel_task[i].tcpu=random_exponential(TCPU);
+		parallel_task[i].tquantum  =   TQuantum;
+		parallel_task[i].tinterrequest = random_exponential(TInterRequest);
+		parallel_task[i].start=random_exponential(TThink);
+		create_event(i, RequestMemory, parallel_task[i].start, LowPriority);
+	}
 }
 
 void stats()
