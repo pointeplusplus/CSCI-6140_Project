@@ -12,13 +12,17 @@
 
 /***** Define simulation *****/
 #define MS 1
-#define NS 1
-#define TCPU 0.4
-#define TQuantum 0.4
+#define NS 9001
+#define TCPU 40
+#define TQuantum 100
 #define TInterRequest 0.04
-#define TDiskService 0.06
+#define TDiskService 10
 #define TThink 8
 #define TTS 1000000
+
+//Parameters given in the lecture slide
+#define context_switich_time 0.5 //context switching time
+#define TT 
 
 #define MemoryQueue 0
 #define CPUQueue 1
@@ -167,7 +171,7 @@ void Process_RequestCPU(int process, double time)
     task[process].tcpu-=release_time;
     task[process].tinterrequest-=release_time;
     task[process].tquantum-=release_time;
-    create_event(process, ReleaseCPU, time+release_time, LowPriority);
+    create_event(process, ReleaseCPU, time+release_time+TS, LowPriority);
   }
 }
 
