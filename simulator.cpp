@@ -47,7 +47,12 @@ static unsigned long mt[Nrnd];     /* the array for the state vector  */
 static int mti=Nrnd+1;             /* mti==Nrnd+1 means mt[Nrnd] is not initialized */
 
 /* simulator data structurs */
-struct Task { double tcpu,tquantum,tinterrequest,start; } task[NS];  /**** Job list       ****/
+struct Task { 
+	double tcpu;
+	double tquantum;
+	double tinterrequest;
+	double start; 
+} task[NS];  /**** Job list       ****/
 
 struct Events {                              /**** Event list           ****/
 	int head;
@@ -55,7 +60,7 @@ struct Events {                              /**** Event list           ****/
 	int q_length;
 	double time[NS]; 
 	int task[NS], event[NS];
-} elist;
+} event_list;
 
 
 struct Queue {  /**** Queues: 0 - memory queue, 1 - CPU queue, 2 - Disk queue*/
@@ -109,11 +114,11 @@ int main(int argc, char *argv[])
 /***** Main simulation loop *****/
   while (global_time<=TTotal) {
 /***** Select the event e from the head of event list *****/
-    process=elist.task[elist.head];
-    global_time = elist.time[elist.head];
-    event = elist.event[elist.head];
-    elist.head=(elist.head+1)%N;
-    elist.q_length--;
+    process=event_list.task[event_list.head];
+    global_time = event_list.time[event_list.head];
+    event = event_list.event[event_list.head];
+    event_list.head=(event_list.head+1)%N;
+    event_list.q_length--;
 /***** Execute the event e ******/
     switch(event) {
     case RequestMemory: Process_RequestMemory(process, global_time);
@@ -265,28 +270,27 @@ void place_in_queue(int process, double time, int current_queue)
 
 void create_event(int process, int event, double time, int priority)
 {
-	int i, notdone=1, place=elist.tail;
-
+	int i, notdone=1, place=event_list.tail;
   
 /**** Move all more futuristic tasks by one position                ****/
 //If this were a list this wouldn't have to happen at all
-	for(i=(elist.tail+N-1)%N; notdone & (elist.q_length>0); i=(i+N-1)%N) {
-    	if ((elist.time[i]<time) | ((priority==LowPriority) & (elist.time[i]==time))) 
+	for(i=(event_list.tail+N-1)%N; notdone & (event_list.q_length>0); i=(i+N-1)%N) {
+    	if ((event_list.time[i]<time) | ((priority==LowPriority) & (event_list.time[i]==time))) 
       		notdone=0;
     	else {
-      		elist.time[place]=elist.time[i];
-      		elist.task[place]=elist.task[i];
-      		elist.event[place]=elist.event[i];
+      		event_list.time[place]=event_list.time[i];
+      		event_list.task[place]=event_list.task[i];
+      		event_list.event[place]=event_list.event[i];
       		place=i;
     	}
-    	if (i==elist.head) notdone=0;
+    	if (i==event_list.head) notdone=0;
   	}
 /**** Place the argument event in the newly created space           ****/
-  	elist.time[place]=time;
-  	elist.task[place]=process;
-  	elist.event[place]=event;
-  	elist.tail=(elist.tail+1)%N;
-  	elist.q_length++;
+  	event_list.time[place]=time;
+  	event_list.task[place]=process;
+  	event_list.event[place]=event;
+  	event_list.tail=(event_list.tail+1)%N;
+  	event_list.q_length++;
 }
 
 void init()
@@ -294,7 +298,7 @@ void init()
   	int i;
 
 /**** Initialize structures                                         ****/
-  	elist.head=elist.tail=elist.q_length=0;
+  	event_list.head=event_list.tail=event_list.q_length=0;
   	for(i=0;i<TotQueues;i++) {
     	queue[i].head=queue[i].tail=queue[i].q_length=queue[i].n=0;
     	queue[i].waiting_time=queue[i].ts=0.0;
