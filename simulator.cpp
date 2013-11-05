@@ -51,6 +51,7 @@ static int mti=Nrnd+1;             /* mti==Nrnd+1 means mt[Nrnd] is not initiali
 
 /* simulator data structurs */
 class Task { 
+public:
 	double tcpu;
 	double tquantum;
 	double tinterrequest;
@@ -61,6 +62,7 @@ class Task {
 Task task[NS];
 
 class Events {                              /**** Event list           ****/
+public:	
 	int head;
 	int tail;
 	int q_length;
@@ -68,9 +70,10 @@ class Events {                              /**** Event list           ****/
 	int task[NS], event[NS];
 };
 
-Event event_list;
+Events event_list;
 
 class Queue {  /**** Queues: 0 - memory queue, 1 - CPU queue, 2 - Disk queue*/
+public:	
 	int head;
 	int tail;
 	int q_length; //current length of the queue (was q)
@@ -85,6 +88,7 @@ class Queue {  /**** Queues: 0 - memory queue, 1 - CPU queue, 2 - Disk queue*/
 Queue queue[3];
 
 struct Device {                              /***  Devices: 0 - CPU, 1 - Disk*/
+public:	
 	int busy;
 	double change_time;
 	double tser;
@@ -178,7 +182,7 @@ void Process_RequestCPU(int process, double time)
     task[process].tcpu-=release_time;
     task[process].tinterrequest-=release_time;
     task[process].tquantum-=release_time;
-    create_event(process, ReleaseCPU, time+release_time+TS, LowPriority);
+    create_event(process, ReleaseCPU, time+release_time+context_switich_time, LowPriority);
   }
 }
 
@@ -335,7 +339,7 @@ void init()
 	    	
 	    }
 	    else{ //these are parallel processes
-	    	talk[i].parallel = true;
+	    	task[i].parallel = true;
 	    }
 	    create_event(i, RequestMemory, task[i].start, LowPriority);
 
