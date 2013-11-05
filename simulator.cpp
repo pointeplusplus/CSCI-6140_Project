@@ -55,10 +55,10 @@ class Task {
 	double tquantum;
 	double tinterrequest;
 	double start; 
+	bool parallel; //is this a parallel process
 };  /**** Job list       ****/
 
 Task task[NS];
-Task parallel_task[6];
 
 class Events {                              /**** Event list           ****/
 	int head;
@@ -319,23 +319,28 @@ void init()
     	server[i].busy=0;
     	server[i].change_time=server[i].tser=0.0;
   	}
-  	for(i=0;i<N;i++) {
+  	for(i=0;i<N+6;i++) {
 		/**** Create a new task                                          ****/
-    	task[i].tcpu=random_exponential(TCPU);
-    	task[i].tquantum  =   TQuantum;
-    	task[i].tinterrequest = random_exponential(TInterRequest);
-    	task[i].start=random_exponential(TThink);
-    	create_event(i, RequestMemory, task[i].start, LowPriority);
-	  }
-	//add parallel processes
-	for(i=0;i<6;i++) {
-		/**** Create a new task                                          ****/
-		parallel_task[i].tcpu=random_exponential(TCPU);
-		parallel_task[i].tquantum  =   TQuantum;
-		parallel_task[i].tinterrequest = random_exponential(TInterRequest);
-		parallel_task[i].start=random_exponential(TThink);
-		create_event(i, RequestMemory, parallel_task[i].start, LowPriority);
+
+		//all processes have this
+		task[i].tcpu=random_exponential(TCPU);
+	    task[i].tquantum  =   TQuantum;
+	    task[i].tinterrequest = random_exponential(TInterRequest);
+	    task[i].start=random_exponential(TThink);
+
+    	//interactive processes
+    	if(i < N){
+	    	
+	    	task[i].parallel = false;
+	    	
+	    }
+	    else{ //these are parallel processes
+	    	talk[i].parallel = true;
+	    }
+	    create_event(i, RequestMemory, task[i].start, LowPriority);
+
 	}
+
 }
 
 void stats()
