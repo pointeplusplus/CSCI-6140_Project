@@ -44,6 +44,9 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <list>
+
+using namespace std;
 
 /* for random number generator */
 static unsigned long mt[Nrnd];     /* the array for the state vector  */
@@ -57,6 +60,7 @@ public:
 	double tinterrequest;
 	double start; 
 	bool parallel; //is this a parallel process
+	double t_barrier; //for barrier processes
 };  /**** Job list       ****/
 
 Task task[NS];
@@ -87,7 +91,7 @@ public:
 
 Queue queue[3];
 
-struct Device {                              /***  Devices: 0 - CPU, 1 - Disk*/
+class Device {                              /***  Devices: 0 - CPU, 1 - Disk*/
 public:	
 	int busy;
 	double change_time;
@@ -95,6 +99,11 @@ public:
 };
 
 Device server[2];
+
+class Barrier_Queue{
+public:
+	list<int> waiting_processes;
+};
 
 unsigned short seeds[3];
 int inmemory=0, finished_tasks=0, MPL=MS, N=NS; /* inmemory, actual number of tasks in memory ****/
@@ -188,35 +197,45 @@ void Process_RequestCPU(int process, double time)
 
 void Process_ReleaseCPU(int process, double time)
 {
-  int queue_head;
+	int queue_head;
 
 /**** Update CPU statistics                                            ****/
-  server[CPU].busy=0;
-  server[CPU].tser+=(time-server[CPU].change_time);
-  queue_head=remove_from_queue(CPUQueue, time);           /* remove head of CPU queue ****/
-  if (queue_head!=EMPTY) create_event(queue_head, RequestCPU, time, HighPriority);
-/**** Depending on reason for leaving CPU, select the next event       ****/
-  if (task[process].tcpu==0) {             /* task termination         ****/
-    sum_response_time+=time-task[process].start;
-    finished_tasks++;
-/**** Create a new task                                          ****/
-    task[process].tcpu=random_exponential(TCPU);
-    task[process].tquantum  =   TQuantum;
-    task[process].tinterrequest = random_exponential(TInterRequest);
-    task[process].start=time+random_exponential(TThink);
-    create_event(process, RequestMemory, task[process].start, LowPriority);
-    inmemory--;
-    queue_head=remove_from_queue(MemoryQueue, time);
-    if (queue_head!=EMPTY) create_event(queue_head, RequestMemory, time, HighPriority);
-  }
-  else if (task[process].tquantum==0) {          /* time slice interrupt     ****/
-    task[process].tquantum=TQuantum;
-    create_event(process, RequestCPU, time, LowPriority);
-  }
-  else {                             /* disk access interrupt          ****/
-    task[process].tinterrequest=random_exponential(TInterRequest);
-    create_event(process, RequestDisk, time, LowPriority);
-  }
+	server[CPU].busy=0;
+	server[CPU].tser+=(time-server[CPU].change_time);
+	queue_head=remove_from_queue(CPUQueue, time);           /* remove head of CPU queue ****/
+	if (queue_head!=EMPTY) create_event(queue_head, RequestCPU, time, HighPriority);
+	/**** Depending on reason for leaving CPU, select the next event       ****/
+	if (task[process].tcpu==0) {             /* task termination         ****/
+		if(task[process].parallel == true){
+			//TODO: the process needs to go to the barrier synchronization queue
+		}
+		sum_response_time+=time-task[process].start;
+		finished_tasks++;
+		/**** Create a new task                                          ****/
+		task[process].tcpu=random_exponential(TCPU);
+		task[process].tquantum  =   TQuantum;
+		task[process].tinterrequest = random_exponential(TInterRequest);
+		task[process].start=time+random_exponential(TThink);
+		create_event(process, RequestMemory, task[process].start, LowPriority);
+		inmemory--;
+		queue_head=remove_from_queue(MemoryQueue, time);
+    	if (queue_head!=EMPTY) create_event(queue_head, RequestMemory, time, HighPriority);
+    }
+  	else if (task[process].tquantum==0) {          /* time slice interrupt     ****/
+ 		//parallel processes only
+ 		if(task[process].parallel == true){
+ 			//TODO
+  		}
+  		//interactive processes only
+  		else{
+    		task[process].tquantum=TQuantum;
+    		create_event(process, RequestCPU, time, LowPriority);
+    	}
+ 	}
+  	else {                             /* disk access interrupt          ****/
+    	task[process].tinterrequest=random_exponential(TInterRequest);
+    	create_event(process, RequestDisk, time, LowPriority);
+  	}	
 }
 
 void Process_RequestDisk(int process, double time)
