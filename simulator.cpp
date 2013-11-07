@@ -19,6 +19,7 @@
 #define TDiskService 10
 #define TThink 8
 #define TTS 1000000
+#define FreeSystemMemory = 7680
 
 //Parameters given in the lecture slide
 #define context_switich_time 0.5 //context switching times
@@ -119,6 +120,7 @@ int finished_parallel_tasks = 0;
 
 double sum_response_time=0.0;
 double TTotal=TTS;
+double memory_allocated=0.0;
 void Process_RequestMemory(int, double), Process_RequestCPU(int, double),   /****  Event procedures      ****/
 	Process_ReleaseCPU(int, double), Process_RequestDisk(int, double), Process_ReleaseDisk(int, double);   
 double erand48(unsigned short xsubi[3]), random_exponential(double);                         /****  Auxiliary functions   ****/
@@ -205,6 +207,7 @@ void Process_RequestCPU(int process, double time)
     task[process].tcpu-=release_time;
     task[process].tinterrequest-=release_time;
     task[process].tquantum-=release_time;
+    task[process].t_page_fault = inter_page_fault_time();
     create_event(process, ReleaseCPU, time+release_time+context_switich_time, LowPriority);
   }
 }
@@ -243,6 +246,7 @@ void Process_ReleaseCPU(int process, double time)
 			task[process].tquantum  =   TQuantum;
 			task[process].tinterrequest = random_exponential(TInterRequest);
 			task[process].start=time+random_exponential(TThink);
+			task[process].t_page_fault = inter_page_fault_time();
 			create_event(process, RequestMemory, task[process].start, LowPriority);
 			inmemory--;
 			queue_head=remove_from_queue(MemoryQueue, time);
@@ -380,6 +384,8 @@ void init()
 {
   	int i;
 
+	memory_allocated = FreeSystemMemory/MPL;
+
 /**** Initialize structures                                         ****/
   	event_list.head=event_list.tail=event_list.q_length=0;
   	for(i=0;i<TotQueues;i++) {
@@ -398,6 +404,7 @@ void init()
 		task[i].tcpu=random_exponential(TCPU);
 	    task[i].tquantum  =   TQuantum;
 	    task[i].tinterrequest = random_exponential(TInterRequest);
+	    task[i].t_page_fault = inter_page_fault_time();
 	    task[i].start=random_exponential(TThink);
 
     	//interactive processes
