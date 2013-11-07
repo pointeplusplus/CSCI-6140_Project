@@ -229,6 +229,7 @@ void Process_ReleaseCPU(int process, double time)
 {
 	int queue_head;
 
+	int CPU = task[process].CPU_number;
  /**** Update CPU statistics                                            ****/
 	server[CPU].busy=0;
 	server[CPU].tser+=(time-server[CPU].change_time);
@@ -430,7 +431,7 @@ void init()
     	queue[i].waiting_time=queue[i].ts=0.0;
     	queue[i].change_time=0;
   	}
-  	for(i=0;i<2;i++) {
+  	for(i=0;i<1+NUM_CPUs;i++) {
     	server[i].busy=0;
     	server[i].change_time=server[i].tser=0.0;
   	}
