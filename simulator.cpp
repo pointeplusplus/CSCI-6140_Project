@@ -35,8 +35,9 @@
 #define RequestDisk 3
 #define ReleaseDisk 4
 
-#define CPU 0
-#define DISK 1
+#define NUM_CPUs 4
+#define CPU 1
+#define DISK 0
 #define EMPTY -1
 #define LowPriority 0
 #define HighPriority 1
@@ -102,7 +103,7 @@ public:
 	double tser;
 };
 
-Device server[2];
+Device server[NUM_CPUs +1]; //add 1 for the disk
 
 class Barrier_Queue{
 public:
@@ -137,6 +138,17 @@ double inter_page_fault_time(){
 	//the actual time = 1/f(m)
 	page_fault_time = 1.0/page_fault_time;
 	return page_fault_time;
+}
+
+bool CPUs_busy(){
+	bool busy = true;
+	//start at 1 to avoid disk
+	for(int c = 1; c < NUM_CPUs; c++){
+		if (server[c].busy == 0){
+			busy = false;
+		}
+	}
+	return busy;
 }
 
 //int = queue #, double = time of removal.  Note: this is pop_front();
