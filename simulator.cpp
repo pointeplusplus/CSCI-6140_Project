@@ -37,7 +37,7 @@
 #define ReleaseDisk 4
 
 #define NUM_CPUs 4
-#define CPU 1
+//#define CPU 1
 #define DISK 0
 #define EMPTY -1
 #define LowPriority 0
@@ -66,6 +66,7 @@ public:
 	double tinterrequest;
 	double start; 
 	bool parallel; //is this a parallel process
+	int CPU_number;
 };  /**** Job list       ****/
 
 Task task[NS];
@@ -151,6 +152,16 @@ bool CPUs_busy(){
 	return busy;
 }
 
+int free_CPU(){
+	//start at 1 to avoid disk
+	for(int c = 1; c < NUM_CPUs+1; c++){
+		if(server[c].busy == 0){
+			return c;
+		}
+	}
+	return -1;
+}
+
 //int = queue #, double = time of removal.  Note: this is pop_front();
 int remove_from_queue(int, double);
 
@@ -218,10 +229,12 @@ void Process_RequestCPU(int process, double time)
   double release_time;
 
 /**** Place in CPU queue if server is busy                       ****/
-  if (server[CPU].busy) place_in_queue(process,time,CPUQueue);
+  if (CPUs_busy) place_in_queue(process,time,CPUQueue);
   else {
+  	int CPU = free_CPU();
     server[CPU].busy=1;
     server[CPU].change_time=time;
+    task[process].CPU_number = CPU;
 /**** Find the time of leaving CPU                               ****/
     if (task[process].tcpu<task[process].tquantum) release_time=task[process].tcpu;
     else release_time=task[process].tquantum;
@@ -456,6 +469,7 @@ void init()
 	    task[i].t_page_fault = inter_page_fault_time();
 	    task[i].start=random_exponential(TThink);
 	    task[i].t_barrier = BarrierTime;
+	    task[i].CPU_number = -1;
 
     	//interactive processes
     	if(i < N){
