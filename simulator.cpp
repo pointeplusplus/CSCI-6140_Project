@@ -247,6 +247,13 @@ void Process_ReleaseCPU(int process, double time)
 			//the process needs to go to the barrier synchronization queue
 			barrier_synch_queue.waiting_processes.push_back(process);
 			finished_parallel_tasks++;
+			if (barrier_synch_queue.waiting_processes.size() >= 6) {
+			    for(list<int>::iterator i = barrier_synch_queue.waiting_processes.begin();
+				i != barrier_synch_queue.waiting_processes.end(); i++ ) {
+
+				create_event(i, RequestCPU, time, LowPriority);
+			    }
+			}
 		}
 		//interactive processes:  need to make a new process at the monitor
 		else{ 
