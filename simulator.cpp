@@ -17,7 +17,7 @@
 #define TQuantum 100
 #define TInterRequest 16 //this is the i/o request time
 #define TDiskService 10
-#define TThink 8
+#define TThink 5
 #define TTS 1000000
 #define FreeSystemMemory 7680
 #define BarrierTime .4
@@ -489,11 +489,22 @@ void init()
 
 void stats()
 {
+	//maple calculations
+	double m = FreeSystemMemory/MPL;
+	double cmstart = 0.02; 
+	double cm = 0.02;
+	double cmc = 51; 
+	double amatstart = 1+cmstart*(cmc-1);
+	double amat = 1+cm*(cmc-1);
+
+	double tinterio = 0.016/amatstart*amat;
+
+	double tt = 5.0;
 
 	 printf("System definitions: N %2d MPL %2d TTotal %6.0f\n",N, MPL, TTotal);
 
 	 //total simulation stats
-	 cout << "m " << FreeSystemMemory << " amat " <<  <<  " TIP " << "what is tip?" << endl; 
+	 cout << "m " << m << " amat " << amat <<  " TIP " << "what is tip?" << endl; 
 
 
 	/**** Update utilizations                                          ****/
@@ -545,7 +556,7 @@ void stats()
 	 queue[CPUQueue].n-queue[CPUQueue].q_length, 
 	 queue[DiskQueue].n-queue[DiskQueue].q_length);
   	cout << "average response time " << sum_response_time/finished_tasks <<  "processes finished " 
-  		<< inished_tasks << " parallel tasks finished " << finished_parallel_tasks << endl; 
+  		<< inished_tasks << " parallel tasks finished " << finished_parallel_tasks << endlg; 
 }
 
 /*------------------------------ Random Number Generator --------------------------*/
