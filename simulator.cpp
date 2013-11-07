@@ -59,7 +59,6 @@ public:
 	double tquantum;
 	//added doubles for page fault and i/o
 	double t_page_fault; //this is -1 if no page fault
-	double t_i_o;
 	double tinterrequest;
 	double start; 
 	bool parallel; //is this a parallel process
@@ -125,7 +124,18 @@ void Process_RequestMemory(int, double), Process_RequestCPU(int, double),   /***
 	Process_ReleaseCPU(int, double), Process_RequestDisk(int, double), Process_ReleaseDisk(int, double);   
 double erand48(unsigned short xsubi[3]), random_exponential(double);                         /****  Auxiliary functions   ****/
 void place_in_queue(int, double, int), create_event(int, int, double, int), init(), 
-  stats(); 
+  stats();
+
+//gets inter page fault time 
+double inter_page_fault_time(){
+	//f(m)
+	double page_fault_time = 0.0;
+	page_fault_time = memory_allocated/160.0;
+	page_fault_time += 17.0;
+	//the actual time = 1/f(m)
+	page_fault_time = 1.0/page_fault_time;
+	return page_fault_time;
+}
 
 //int = queue #, double = time of removal.  Note: this is pop_front();
 int remove_from_queue(int, double);
@@ -223,11 +233,11 @@ void Process_ReleaseCPU(int process, double time)
 	if (queue_head!=EMPTY) create_event(queue_head, RequestCPU, time, HighPriority);
 	/**** Depending on reason for leaving CPU, select the next event       ****/
 	if(task[process].t_page_fault ==  0){
-
+		//TODO
 	}
 	//this is the same for both parallel + interactive
 	//both go back in the CPU queue
-	if(task[process].t_i_o == 0){
+	if(task[process].tinterrequest == 0){
 		task[process].tinterrequest=random_exponential(TInterRequest);
     	create_event(process, RequestDisk, time, LowPriority);	
 	}
