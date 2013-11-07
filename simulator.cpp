@@ -505,12 +505,13 @@ void stats()
 
 	double tinterio = 0.016/amatstart*amat;
 
-	double tt = 5.0;
+	double tt = TThink;
+	tinterpage = evalf(1/2^(-m/160-17)*10^(-9)*amat);
 
-	 printf("System definitions: N %2d MPL %2d TTotal %6.0f\n",N, MPL, TTotal);
+	printf("System definitions: N %2d MPL %2d TTotal %6.0f\n",N, MPL, TTotal);
 
 	 //total simulation stats
-	 cout << "m " << m << " amat " << amat <<  " TIP " << "what is tip?" << endl; 
+	 cout << "m " << m << " amat " << amat <<  " TIP " << tinterpage << endl; 
 
 
 	/**** Update utilizations                                          ****/
