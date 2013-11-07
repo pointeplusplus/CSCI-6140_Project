@@ -56,6 +56,9 @@ class Task {
 public:
 	double tcpu;
 	double tquantum;
+	//added doubles for page fault and i/o
+	double t_page_fault; //this is -1 if no page fault
+	double t_i_o;
 	double tinterrequest;
 	double start; 
 	bool parallel; //is this a parallel process
@@ -107,11 +110,15 @@ public:
 Barrier_Queue barrier_synch_queue;
 
 unsigned short seeds[3];
-int inmemory=0, finished_tasks=0, MPL=MS, N=NS; /* inmemory, actual number of tasks in memory ****/
+int inmemory=0;
+int finished_tasks=0;
+int MPL=MS;
+int N=NS; /* inmemory, actual number of tasks in memory ****/
 
 int finished_parallel_tasks = 0;
 
-double sum_response_time=0.0, TTotal=TTS;
+double sum_response_time=0.0;
+double TTotal=TTS;
 void Process_RequestMemory(int, double), Process_RequestCPU(int, double),   /****  Event procedures      ****/
 	Process_ReleaseCPU(int, double), Process_RequestDisk(int, double), Process_ReleaseDisk(int, double);   
 double erand48(unsigned short xsubi[3]), random_exponential(double);                         /****  Auxiliary functions   ****/
@@ -212,28 +219,42 @@ void Process_ReleaseCPU(int process, double time)
 	queue_head=remove_from_queue(CPUQueue, time);           /* remove head of CPU queue ****/
 	if (queue_head!=EMPTY) create_event(queue_head, RequestCPU, time, HighPriority);
 	/**** Depending on reason for leaving CPU, select the next event       ****/
+	if(task[process].t_page_fault ==  0){
+
+	}
+	//this is the same for both parallel + interactive
+	//both go back in the CPU queue
+	if(task[process].t_i_o == 0){
+		task[process].tinterrequest=random_exponential(TInterRequest);
+    	create_event(process, RequestDisk, time, LowPriority);	
+	}
 	if (task[process].tcpu==0) {             /* task termination         ****/
 		if(task[process].parallel == true){
-			//TODO: the process needs to go to the barrier synchronization queue
+			//the process needs to go to the barrier synchronization queue
 			barrier_synch_queue.push_back(task[process]);
+			finished_parallel_tasks++;
 		}
-		sum_response_time+=time-task[process].start;
-		finished_tasks++;
-		/**** Create a new task                                          ****/
-		task[process].tcpu=random_exponential(TCPU);
-		task[process].tquantum  =   TQuantum;
-		task[process].tinterrequest = random_exponential(TInterRequest);
-		task[process].start=time+random_exponential(TThink);
-		create_event(process, RequestMemory, task[process].start, LowPriority);
-		inmemory--;
-		queue_head=remove_from_queue(MemoryQueue, time);
-    	if (queue_head!=EMPTY) create_event(queue_head, RequestMemory, time, HighPriority);
+		//interactive processes:  need to make a new process at the monitor
+		else{ 
+			sum_response_time+=time-task[process].start;
+			finished_tasks++;
+			/**** Create a new task                                          ****/
+			task[process].tcpu=random_exponential(TCPU);
+			task[process].tquantum  =   TQuantum;
+			task[process].tinterrequest = random_exponential(TInterRequest);
+			task[process].start=time+random_exponential(TThink);
+			create_event(process, RequestMemory, task[process].start, LowPriority);
+			inmemory--;
+			queue_head=remove_from_queue(MemoryQueue, time);
+	    	if (queue_head!=EMPTY) create_event(queue_head, RequestMemory, time, HighPriority);
+    	}
     }
   	else if (task[process].tquantum==0) {          /* time slice interrupt     ****/
+ 		
+    	task[process].tquantum=TQuantum;
  		//parallel processes only
  		if(task[process].parallel == true){
- 			//TODO
- 			task[process].tquantum=TQuantum;
+ 			
     		create_event(process, RequestCPU, time, LowPriority);
   		}
   		//interactive processes only
@@ -244,7 +265,7 @@ void Process_ReleaseCPU(int process, double time)
 
   			//this means we got a process form the queue
   			if(process_from_queue != -1){
-  				//TODO: put this process in CPU
+  				//put this process in CPU
   				inmemory++; //adding a process to the CPU queue
   				create_event(process_from_queue, RequestCPU, time, HighPriority);
 
@@ -260,8 +281,9 @@ void Process_ReleaseCPU(int process, double time)
     	}
  	}
   	else {                             /* disk access interrupt          ****/
-    	task[process].tinterrequest=random_exponential(TInterRequest);
-    	create_event(process, RequestDisk, time, LowPriority);
+    	//this should never happen
+ 		//code that was here is out of order
+ 		assert(true);
   	}	
 }
 
