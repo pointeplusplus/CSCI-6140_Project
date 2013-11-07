@@ -124,6 +124,7 @@ int MPL=MS;
 int N=NS; /* inmemory, actual number of tasks in memory ****/
 
 int finished_parallel_tasks = 0;
+int num_context_switches = 0;
 
 double sum_response_time=0.0;
 double TTotal=TTS;
