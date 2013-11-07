@@ -491,7 +491,13 @@ void stats()
 {
 
 	 printf("System definitions: N %2d MPL %2d TTotal %6.0f\n",N, MPL, TTotal);
+
+	 //total simulation stats
+	 cout << "m " << FreeSystemMemory << " amat " <<  <<  " TIP " << "what is tip?" << endl; 
+
+
 	/**** Update utilizations                                          ****/
+
 	//for multiple CPUs
 	for(int CPU = 0; CPU < server.size(); CPU++){
 		if (server[CPU].busy==1) server[CPU].tser+=(TTotal-server[CPU].change_time);
@@ -507,8 +513,9 @@ void stats()
 	double Ucpu_ps_avg = 0.0;
 	//CPUs
 	for(int CPU = 1; CPU < NUM_CPUs+1; CPU++){
-		cout << "CPU  " << CPU <<  " Ucpu " <<  << " Ucpu-wi  " << << " Ucpu-wd " << << " Ucpups " << << endl;
+		cout << "CPU  " << CPU <<  " Ucpu " << 100.0*server[CPU].tser/TTotal << " Ucpu-wi  " << << " Ucpu-wd " << << " Ucpups " << << endl;
 		//TODO: get the sum of the doubles above
+		Ucpu_avg += 100.0*server[CPU].tser/TTotal;
 	}
 	Ucpu_avg /= NUM_CPUs;
 	Ucpu_wi_avg /= NUM_CPUs;
@@ -519,7 +526,6 @@ void stats()
 	//for the single disk
 	cout << "disk  0      utilization " << 100.0*server[DISK].tser/TTotal << endl;
 	cout << "disk average utilization " << 100.0*server[DISK].tser/TTotal << endl;
-
 
 	/**** Print statistics                                             ****/
  	//old code
@@ -538,8 +544,8 @@ void stats()
 	 queue[0].n-queue[0].q_length,
 	 queue[CPUQueue].n-queue[CPUQueue].q_length, 
 	 queue[DiskQueue].n-queue[DiskQueue].q_length);
-  	printf("average response time   %5.2f processes finished %5d\n",
-	 sum_response_time/finished_tasks, finished_tasks); 
+  	cout << "average response time " << sum_response_time/finished_tasks <<  "processes finished " 
+  		<< inished_tasks << " parallel tasks finished " << finished_parallel_tasks << endl; 
 }
 
 /*------------------------------ Random Number Generator --------------------------*/
