@@ -524,7 +524,7 @@ void stats()
 	double tinterio = 0.016/amatstart*amat;
 
 	double tt = TThink;
-	tinterpage = 0.5^(-m/160.0-17.0)*10.0^(-9.0)*amat;
+	//tinterpage = 0.5^(-m/160.0-17.0)*10.0^(-9.0)*amat;
 
 	printf("System definitions: N %2d MPL %2d TTotal %6.0f\n",N, MPL, TTotal);
 
@@ -574,8 +574,8 @@ void stats()
  	//old code
   	//printf("utilizations are: CPU %5.2f Disk %5.2f\n", 100.0*server[0].tser/TTotal, 100.0*server[1].tser/TTotal);
 	int qe_mean = queue[MemoryQueue].waiting_time?queue[MemoryQueue].waiting_time/(queue[MemoryQueue].n-queue[MemoryQueue].q_length):0.0;
-	int qCPU_mean queue[CPUQueue].waiting_time?queue[CPUQueue].waiting_time/(queue[CPUQueue].n-queue[CPUQueue].q_length):0.0;
-	int qDisk_mean = queue[DiskQueue].waiting_time?queue[DiskQueue].waiting_time/(queue[DiskQueue].n-queue[DiskQueue].q_length):0.0);
+	int qCPU_mean = queue[CPUQueue].waiting_time?queue[CPUQueue].waiting_time/(queue[CPUQueue].n-queue[CPUQueue].q_length):0.0;
+	int qDisk_mean = queue[DiskQueue].waiting_time?queue[DiskQueue].waiting_time/(queue[DiskQueue].n-queue[DiskQueue].q_length):0.0;
 
 	cout << "mean waiting time in qe "<< qe_mean << " qCPU "<< qCPU_mean << " qDisk " << qDisk_mean 
 		<< "barrier " << barrier_synch_queue.ts/6 << " total barrier wait " << barrier_synch_queue.ts <<endl;
