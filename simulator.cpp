@@ -20,6 +20,7 @@
 #define TThink 8
 #define TTS 1000000
 #define FreeSystemMemory 7680
+#define BarrierTime .4
 
 //Parameters given in the lecture slide
 #define context_switich_time 0.5 //context switching times
@@ -65,7 +66,6 @@ public:
 	double tinterrequest;
 	double start; 
 	bool parallel; //is this a parallel process
-	double t_barrier; //for barrier processes
 };  /**** Job list       ****/
 
 Task task[NS];
@@ -231,7 +231,8 @@ void Process_RequestCPU(int process, double time)
     task[process].tcpu-=release_time;
     task[process].tinterrequest-=release_time;
     task[process].tquantum-=release_time;
-    task[process].t_page_fault = inter_page_fault_time();
+    task[process].t_page_fault-=release_time;
+    task[process].t_barrier-=release_time;
     create_event(process, ReleaseCPU, time+release_time+context_switich_time, LowPriority);
   }
 }
@@ -247,73 +248,75 @@ void Process_ReleaseCPU(int process, double time)
 	if (queue_head!=EMPTY) create_event(queue_head, RequestCPU, time, HighPriority);
 	/**** Depending on reason for leaving CPU, select the next event       ****/
 	if(task[process].t_page_fault ==  0){
-		//TODO
+	    task[process].t_page_fault = inter_page_fault_time();
+	    create_event(process, RequestDisk, time, LowPriority);		
 	}
 	//this is the same for both parallel + interactive
 	//both go back in the CPU queue
-	if(task[process].tinterrequest == 0){
+	else if(task[process].tinterrequest == 0){
 		task[process].tinterrequest=random_exponential(TInterRequest);
-    	create_event(process, RequestDisk, time, LowPriority);	
+		create_event(process, RequestDisk, time, LowPriority);	
 	}
-	if (task[process].tcpu==0) {             /* task termination         ****/
-		if(task[process].parallel == true){
-			//the process needs to go to the barrier synchronization queue
-			barrier_synch_queue.waiting_processes.push_back(process);
-			finished_parallel_tasks++;
-			if (barrier_synch_queue.waiting_processes.size() >= 6) {
-			    for(list<int>::iterator i = barrier_synch_queue.waiting_processes.begin();
-				i != barrier_synch_queue.waiting_processes.end(); i++ ) {
+	else if (task[process].tcpu==0) {             /* task termination         ****/
+	    task[process].tcpu=random_exponential(TCPU);
+	    if(task[process].parallel == true){
+		    //the process needs to go to the barrier synchronization queue
+		    barrier_synch_queue.waiting_processes.push_back(process);
+		    finished_parallel_tasks++;
+		    if (barrier_synch_queue.waiting_processes.size() >= 6) {
+			for(list<int>::iterator b = barrier_synch_queue.waiting_processes.begin();
+			    b != barrier_synch_queue.waiting_processes.end(); b++ ) {
 
-				create_event(i, RequestCPU, time, LowPriority);
-			    }
+			    task[*b].t_barrier = BarrierTime;
+			    create_event(*b, RequestCPU, time, LowPriority);
 			}
-		}
-		//interactive processes:  need to make a new process at the monitor
-		else{ 
-			sum_response_time+=time-task[process].start;
-			finished_tasks++;
-			/**** Create a new task                                          ****/
-			task[process].tcpu=random_exponential(TCPU);
-			task[process].tquantum  =   TQuantum;
-			task[process].tinterrequest = random_exponential(TInterRequest);
-			task[process].start=time+random_exponential(TThink);
-			task[process].t_page_fault = inter_page_fault_time();
-			create_event(process, RequestMemory, task[process].start, LowPriority);
-			inmemory--;
-			queue_head=remove_from_queue(MemoryQueue, time);
-	    	if (queue_head!=EMPTY) create_event(queue_head, RequestMemory, time, HighPriority);
-    	}
-    }
+		    }
+	    }
+	    //interactive processes:  need to make a new process at the monitor
+	    else{ 
+		    sum_response_time+=time-task[process].start;
+		    finished_tasks++;
+		    /**** Create a new task                                          ****/
+		    task[process].tquantum  =   TQuantum;
+		    task[process].tinterrequest = random_exponential(TInterRequest);
+		    task[process].start=time+random_exponential(TThink);
+		    task[process].t_page_fault = inter_page_fault_time();
+		    task[process].t_barrier = BarrierTime;
+		    create_event(process, RequestMemory, task[process].start, LowPriority);
+		    inmemory--;
+		    queue_head=remove_from_queue(MemoryQueue, time);
+		    if (queue_head!=EMPTY) create_event(queue_head, RequestMemory, time, HighPriority);
+	    }
+	}
   	else if (task[process].tquantum==0) {          /* time slice interrupt     ****/
  		
-    	task[process].tquantum=TQuantum;
- 		//parallel processes only
- 		if(task[process].parallel == true){
- 			
-    		create_event(process, RequestCPU, time, LowPriority);
-  		}
-  		//interactive processes only
-  		else{
-  			//first check the memory queue and put the first item into the CPU
-  			int process_from_queue = remove_from_queue(MemoryQueue, time);
-  			inmemory--; //we just removed a process from memory
+	    task[process].tquantum=TQuantum;
+	    //parallel processes only
+	    if(task[process].parallel == true){	
+		create_event(process, RequestCPU, time, LowPriority);
+	    }
+	    //interactive processes only
+	    else{
+		//first check the memory queue and put the first item into the CPU
+		int process_from_queue = remove_from_queue(MemoryQueue, time);
+		inmemory--; //we just removed a process from memory
 
-  			//this means we got a process form the queue
-  			if(process_from_queue != -1){
-  				//put this process in CPU
-  				inmemory++; //adding a process to the CPU queue
-  				create_event(process_from_queue, RequestCPU, time, HighPriority);
+		//this means we got a process form the queue
+		if(process_from_queue != -1){
+			//put this process in CPU
+			inmemory++; //adding a process to the CPU queue
+			create_event(process_from_queue, RequestCPU, time, HighPriority);
 
 
-  			}
-  			//either way, first process needs to request memory again
-  			create_event(process, RequestMemory, time, LowPriority);
-			
-  			//this was in the code, but it's not what the assignment asks for
-    		//task[process].tquantum=TQuantum;
-    		//create_event(process, RequestCPU, time, LowPriority);
+		}
+		//either way, first process needs to request memory again
+		create_event(process, RequestMemory, time, LowPriority);
 
-    	}
+		//this was in the code, but it's not what the assignment asks for
+		//task[process].tquantum=TQuantum;
+		//create_event(process, RequestCPU, time, LowPriority);
+
+	    }
  	}
  	//the only thing left is barrier synchronization
   	else { //
@@ -322,6 +325,15 @@ void Process_ReleaseCPU(int process, double time)
  			assert(false);
  		}
  		else{
+			barrier_synch_queue.waiting_processes.push_back(process);
+			if (barrier_synch_queue.waiting_processes.size() >= 6) {
+			    for(list<int>::iterator b = barrier_synch_queue.waiting_processes.begin();
+				b != barrier_synch_queue.waiting_processes.end(); b++ ) {
+
+				task[*b].t_barrier = BarrierTime;
+				create_event(*b, RequestCPU, time, LowPriority);
+			    }
+			}
 
  		}
  		
@@ -443,6 +455,7 @@ void init()
 	    task[i].tinterrequest = random_exponential(TInterRequest);
 	    task[i].t_page_fault = inter_page_fault_time();
 	    task[i].start=random_exponential(TThink);
+	    task[i].t_barrier = BarrierTime;
 
     	//interactive processes
     	if(i < N){
