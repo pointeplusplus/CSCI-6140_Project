@@ -467,15 +467,18 @@ void init()
     	server[i].change_time=server[i].tser=0.0;
   	}
   	for(i=0;i<N+6;i++) {
-		/**** Create a new task                                          ****/
+	    /**** Create a new task                                          ****/
 
-		//all processes have this
-		task[i].tcpu=random_exponential(TCPU);
+	    //all processes have this
 	    task[i].tquantum  =   TQuantum;
 	    task[i].tinterrequest = random_exponential(TInterRequest);
 	    task[i].t_page_fault = inter_page_fault_time();
 	    task[i].start=random_exponential(TThink);
-	    task[i].t_barrier = BarrierTime;
+	    if(i >= N) {
+		task[i].tcpu=BarrierTime;
+	    }
+	    else
+		task[i].tcpu=random_exponential(TCPU);
 	    task[i].CPU_number = -1;
 
     	//interactive processes
