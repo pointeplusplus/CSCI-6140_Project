@@ -251,7 +251,6 @@ void Process_RequestCPU(int process, double time)
     task[process].tinterrequest-=release_time;
     task[process].tquantum-=release_time;
     task[process].t_page_fault-=release_time;
-    task[process].t_barrier-=release_time;
     create_event(process, ReleaseCPU, time+release_time+context_switich_time, LowPriority);
   }
 }
@@ -278,11 +277,12 @@ void Process_ReleaseCPU(int process, double time)
 		create_event(process, RequestDisk, time, LowPriority);	
 	}
 	else if (task[process].tcpu==0) {             /* task termination         ****/
-	    task[process].tcpu=random_exponential(TCPU);
 	    if(task[process].parallel == true){
 		    //the process needs to go to the barrier synchronization queue
+		    task[process].tcpu=BarrierTime
 		    barrier_synch_queue.waiting_processes.push_back(process);
 		    finished_parallel_tasks++;
+
 		    if (barrier_synch_queue.waiting_processes.size() >= 6) {
 			for(list<int>::iterator b = barrier_synch_queue.waiting_processes.begin();
 			    b != barrier_synch_queue.waiting_processes.end(); b++ ) {
@@ -291,9 +291,11 @@ void Process_ReleaseCPU(int process, double time)
 			    create_event(*b, RequestCPU, time, LowPriority);
 			}
 		    }
+
 	    }
 	    //interactive processes:  need to make a new process at the monitor
 	    else{ 
+		    task[process].tcpu=random_exponential(TCPU);
 		    sum_response_time+=time-task[process].start;
 		    finished_tasks++;
 		    /**** Create a new task                                          ****/
@@ -301,7 +303,6 @@ void Process_ReleaseCPU(int process, double time)
 		    task[process].tinterrequest = random_exponential(TInterRequest);
 		    task[process].start=time+random_exponential(TThink);
 		    task[process].t_page_fault = inter_page_fault_time();
-		    task[process].t_barrier = BarrierTime;
 		    create_event(process, RequestMemory, task[process].start, LowPriority);
 		    inmemory--;
 		    queue_head=remove_from_queue(MemoryQueue, time);
@@ -420,7 +421,7 @@ void place_in_queue(int process, double time, int current_queue)
 	/**** Place the process at the tail of queue and move the tail       ****/
   	queue[current_queue].task[queue[current_queue].tail]=process;
   	queue[current_queue].entry_times
- [queue[current_queue].tail]=time;
+	    [queue[current_queue].tail]=time;
   	queue[current_queue].tail=(queue[current_queue].tail+1)%N;
 }
 
@@ -474,21 +475,16 @@ void init()
 	    task[i].tinterrequest = random_exponential(TInterRequest);
 	    task[i].t_page_fault = inter_page_fault_time();
 	    task[i].start=random_exponential(TThink);
-	    if(i >= N) {
-		task[i].tcpu=BarrierTime;
-	    }
-	    else
-		task[i].tcpu=random_exponential(TCPU);
 	    task[i].CPU_number = -1;
 
-    	//interactive processes
-    	if(i < N){
-	    	
-	    	task[i].parallel = false;
-	    	
+	    //interactive processes
+	    if(i < N){
+		task[i].parallel = false;
+		task[i].tcpu=random_exponential(TCPU);
 	    }
 	    else{ //these are parallel processes
-	    	task[i].parallel = true;
+		task[i].parallel = true;
+		task[i].tcpu=BarrierTime;
 	    }
 	    create_event(i, RequestMemory, task[i].start, LowPriority);
 
