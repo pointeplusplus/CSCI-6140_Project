@@ -490,6 +490,7 @@ void init()
 void stats()
 {
 /**** Update utilizations                                          ****/
+	//TODO: update for multiple CPUs
 	if (server[CPU].busy==1) server[CPU].tser+=(TTotal-server[CPU].change_time);
   	if (server[DISK].busy==1) server[DISK].tser+=(TTotal-server[DISK].change_time);
 
