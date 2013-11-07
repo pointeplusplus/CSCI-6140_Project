@@ -106,7 +106,7 @@ public:
 	int busy;
 	double change_time;
 	double tser;
-	int num_context_switches = 0;
+	int num_context_switches;
 };
 
 Device server[NUM_CPUs +1]; //add 1 for the disk
@@ -142,7 +142,7 @@ stats();
 double inter_page_fault_time(){
 	//f(m)
 	double page_fault_time = 0.0;
-	double instruction_fault_probability = 2^-(memory_allocated/160.0 + 17.0);
+	double instruction_fault_probability = pow(2,-(memory_allocated/160.0 + 17.0));
 
 	double average_instruction_time = HitRate * 1 + (1- HitRate) * MissCost;
 
@@ -480,11 +480,12 @@ void init()
 	for(i=0;i<1+NUM_CPUs;i++) {
 		server[i].busy=0;
 		server[i].change_time=server[i].tser=0.0;
+		server[i].num_context_switches = 0;
 	}
 	//initialize barrier queue
 	barrier_synch_queue.ts = 0;
 	barrier_synch_queue.change_time = 0;
-	barrier_synch_queue.waiting_processes = new list<int>();
+	barrier_synch_queue.waiting_processes.clear();
 
 	for(i=0;i<N+6;i++) {
 	    /**** Create a new task                                          ****/
@@ -535,7 +536,7 @@ void stats()
 	/**** Update utilizations                                          ****/
 
 	//for multiple CPUs
-	for(int CPU = 0; CPU < server.size(); CPU++){
+	for(int CPU = 0; CPU < server.length(); CPU++){
 		if (server[CPU].busy==1) server[CPU].tser+=(TTotal-server[CPU].change_time);
 	}
 	//old code
