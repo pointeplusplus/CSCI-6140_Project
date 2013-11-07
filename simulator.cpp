@@ -105,14 +105,21 @@ public:
 	list<int> waiting_processes;
 };
 
+Barrier_Queue barrier_synch_queue;
+
 unsigned short seeds[3];
 int inmemory=0, finished_tasks=0, MPL=MS, N=NS; /* inmemory, actual number of tasks in memory ****/
+
+int finished_parallel_tasks = 0;
+
 double sum_response_time=0.0, TTotal=TTS;
 void Process_RequestMemory(int, double), Process_RequestCPU(int, double),   /****  Event procedures      ****/
 	Process_ReleaseCPU(int, double), Process_RequestDisk(int, double), Process_ReleaseDisk(int, double);   
 double erand48(unsigned short xsubi[3]), random_exponential(double);                         /****  Auxiliary functions   ****/
 void place_in_queue(int, double, int), create_event(int, int, double, int), init(), 
   stats(); 
+
+//int = queue #, double = time of removal.  Note: this is pop_front();
 int remove_from_queue(int, double);
 
 /* for random number generator */
@@ -208,6 +215,7 @@ void Process_ReleaseCPU(int process, double time)
 	if (task[process].tcpu==0) {             /* task termination         ****/
 		if(task[process].parallel == true){
 			//TODO: the process needs to go to the barrier synchronization queue
+			barrier_synch_queue.push_back(task[process]);
 		}
 		sum_response_time+=time-task[process].start;
 		finished_tasks++;
@@ -225,11 +233,30 @@ void Process_ReleaseCPU(int process, double time)
  		//parallel processes only
  		if(task[process].parallel == true){
  			//TODO
+ 			task[process].tquantum=TQuantum;
+    		create_event(process, RequestCPU, time, LowPriority);
   		}
   		//interactive processes only
   		else{
-    		task[process].tquantum=TQuantum;
-    		create_event(process, RequestCPU, time, LowPriority);
+  			//first check the memory queue and put the first item into the CPU
+  			int process_from_queue = remove_from_queue(MemoryQueue, time);
+  			inmemory--; //we just removed a process from memory
+
+  			//this means we got a process form the queue
+  			if(process_from_queue != -1){
+  				//TODO: put this process in CPU
+  				inmemory++; //adding a process to the CPU queue
+  				create_event(process_from_queue, RequestCPU, time, HighPriority);
+
+
+  			}
+  			//either way, first process needs to request memory again
+  			create_event(process, RequestMemory, time, LowPriority);
+			
+  			//this was in the code, but it's not what the assignment asks for
+    		//task[process].tquantum=TQuantum;
+    		//create_event(process, RequestCPU, time, LowPriority);
+
     	}
  	}
   	else {                             /* disk access interrupt          ****/
