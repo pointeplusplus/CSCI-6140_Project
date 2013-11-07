@@ -489,15 +489,43 @@ void init()
 
 void stats()
 {
-/**** Update utilizations                                          ****/
-	//TODO: update for multiple CPUs
-	if (server[CPU].busy==1) server[CPU].tser+=(TTotal-server[CPU].change_time);
-  	if (server[DISK].busy==1) server[DISK].tser+=(TTotal-server[DISK].change_time);
+
+	 printf("System definitions: N %2d MPL %2d TTotal %6.0f\n",N, MPL, TTotal);
+	/**** Update utilizations                                          ****/
+	//for multiple CPUs
+	for(int CPU = 0; CPU < server.size(); CPU++){
+		if (server[CPU].busy==1) server[CPU].tser+=(TTotal-server[CPU].change_time);
+	}
+	//old code
+	//if (server[CPU].busy==1) server[CPU].tser+=(TTotal-server[CPU].change_time);
+  	//if (server[DISK].busy==1) server[DISK].tser+=(TTotal-server[DISK].change_time);
+
+	//doubles for calculating average
+	double Ucpu_avg = 0.0;
+	double Ucpu_wi_avg = 0.0;
+	double Ucpu_wd_avg = 0.0;
+	double Ucpu_ps_avg = 0.0;
+	//CPUs
+	for(int CPU = 1; CPU < NUM_CPUs+1; CPU++){
+		cout << "CPU  " << CPU <<  " Ucpu " <<  << " Ucpu-wi  " << << " Ucpu-wd " << << " Ucpups " << << endl;
+		//TODO: get the sum of the doubles above
+	}
+	Ucpu_avg /= NUM_CPUs;
+	Ucpu_wi_avg /= NUM_CPUs;
+	Ucpu_wd_avg /= NUM_CPUs;
+	Ucpu_ps_avg /= NUM_CPUs;
+	cout << "CPU  avg" <<  " Ucpu " << Ucpu_avg << " Ucpu-wi  " << Ucpu_wi_avg << " Ucpu-wd " << Ucpu_wd_avg << " Ucpups " << Ucpu_ps_avg << endl;
+
+	//for the single disk
+	cout << "disk  0      utilization " << 100.0*server[DISK].tser/TTotal << endl;
+	cout << "disk average utilization " << 100.0*server[DISK].tser/TTotal << endl;
+
 
 	/**** Print statistics                                             ****/
+ 	//old code
+  	//printf("utilizations are: CPU %5.2f Disk %5.2f\n", 100.0*server[0].tser/TTotal, 100.0*server[1].tser/TTotal);
 
- 	printf("System definitions: N %2d MPL %2d TTotal %6.0f\n",N, MPL, TTotal);
-  	printf("utilizations are: CPU %5.2f Disk %5.2f\n", 100.0*server[0].tser/TTotal, 100.0*server[1].tser/TTotal);
+
   	printf("mean waiting time in qe %5.2f qCPU %5.2f qDisk %5.2f\n", 
 	 queue[MemoryQueue].waiting_time?queue[MemoryQueue].waiting_time/(queue[MemoryQueue].n-queue[MemoryQueue].q_length):0.0,
 	 queue[CPUQueue].waiting_time?queue[CPUQueue].waiting_time/(queue[CPUQueue].n-queue[CPUQueue].q_length):0.0,
