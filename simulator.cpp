@@ -59,7 +59,8 @@ public:
 	double tcpu;
 	double tquantum;
 	//added doubles for page fault and i/o
-	double t_page_fault; //this is -1 if no page fault
+	double t_page_fault; 
+	double t_barrier; //when parallel processes need to synch
 	double tinterrequest;
 	double start; 
 	bool parallel; //is this a parallel process
@@ -295,10 +296,16 @@ void Process_ReleaseCPU(int process, double time)
 
     	}
  	}
-  	else {                             /* disk access interrupt          ****/
-    	//this should never happen
- 		//code that was here is out of order
- 		assert(false);
+ 	//the only thing left is barrier synchronization
+  	else { //
+    	//should never happen for interactive processes
+ 		if(task[process].parallel == false){
+ 			assert(false);
+ 		}
+ 		else{
+
+ 		}
+ 		
   	}	
 }
 
