@@ -36,6 +36,10 @@
 #define RequestDisk 3
 #define ReleaseDisk 4
 
+//cache stats
+#define HitRate .98
+#define MissCost 51
+
 #define NUM_CPUs 4
 //#define CPU 1
 #define DISK 0
@@ -134,10 +138,12 @@ void place_in_queue(int, double, int), create_event(int, int, double, int), init
 double inter_page_fault_time(){
 	//f(m)
 	double page_fault_time = 0.0;
-	page_fault_time = memory_allocated/160.0;
-	page_fault_time += 17.0;
+	double instruction_fault_probability = 2^-(memory_allocated/160.0 + 17.0);
+
+	double average_instruction_time = HitRate * 1 + (1- HitRate) * MissCost;
+
 	//the actual time = 1/f(m)
-	page_fault_time = 1.0/page_fault_time;
+	page_fault_time = (1.0/instruction_fault_probability)*average_instruction_time;
 	return page_fault_time;
 }
 
