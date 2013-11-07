@@ -19,7 +19,7 @@
 #define TDiskService 10
 #define TThink 8
 #define TTS 1000000
-#define FreeSystemMemory = 7680
+#define FreeSystemMemory 7680
 
 //Parameters given in the lecture slide
 #define context_switich_time 0.5 //context switching times
@@ -45,6 +45,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <list>
+#include <assert.h>
 
 using namespace std;
 
@@ -244,7 +245,7 @@ void Process_ReleaseCPU(int process, double time)
 	if (task[process].tcpu==0) {             /* task termination         ****/
 		if(task[process].parallel == true){
 			//the process needs to go to the barrier synchronization queue
-			barrier_synch_queue.push_back(task[process]);
+			barrier_synch_queue.waiting_processes.push_back(process);
 			finished_parallel_tasks++;
 		}
 		//interactive processes:  need to make a new process at the monitor
@@ -297,7 +298,7 @@ void Process_ReleaseCPU(int process, double time)
   	else {                             /* disk access interrupt          ****/
     	//this should never happen
  		//code that was here is out of order
- 		assert(true);
+ 		assert(false);
   	}	
 }
 
