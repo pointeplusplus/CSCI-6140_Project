@@ -22,7 +22,6 @@
 
 //Parameters given in the lecture slide
 #define context_switich_time 0.5 //context switching times
-
 #define MemoryQueue 0
 #define CPUQueue 1
 #define DiskQueue 2
@@ -194,6 +193,7 @@ void Process_RequestCPU(int process, double time)
     if (task[process].tcpu<task[process].tquantum) release_time=task[process].tcpu;
     else release_time=task[process].tquantum;
     if (release_time>task[process].tinterrequest) release_time=task[process].tinterrequest;
+    if (task[process].t_page_fault >= 0 && release_time>task[process].t_page_fault) release_time=task[process].t_page_fault;
 /**** Update the process times and create Process_ReleaseCPU event           ****/
     task[process].tcpu-=release_time;
     task[process].tinterrequest-=release_time;
@@ -206,7 +206,7 @@ void Process_ReleaseCPU(int process, double time)
 {
 	int queue_head;
 
-/**** Update CPU statistics                                            ****/
+ /**** Update CPU statistics                                            ****/
 	server[CPU].busy=0;
 	server[CPU].tser+=(time-server[CPU].change_time);
 	queue_head=remove_from_queue(CPUQueue, time);           /* remove head of CPU queue ****/
