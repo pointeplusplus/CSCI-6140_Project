@@ -1,7 +1,6 @@
 /********************************************************************/
 /*********************************** File header.h ******************/
 /********************************************************************/
-#include <iostream>
 
 /* for random number generator */
 #define Nrnd 624
@@ -41,7 +40,7 @@
 #define MissCost 51
 
 #define NUM_CPUs 4
-#define Num_Parallel 0
+#define Num_Parallel 6
 //#define CPU 1
 #define DISK 0
 #define EMPTY -1
@@ -53,6 +52,8 @@
 #include <stdlib.h>
 #include <list>
 #include <assert.h>
+#include <iostream>
+#include <algorithm>
 
 using namespace std;
 
@@ -287,20 +288,17 @@ void Process_ReleaseCPU(int process, double time){
 	if (queue_head!=EMPTY) create_event(queue_head, RequestCPU, time, HighPriority);
 	/**** Depending on reason for leaving CPU, select the next event       ****/
 	if(task[process].t_page_fault ==  0){
-	    cout << "t_page_fault = 0" << endl;
 		task[process].t_page_fault = inter_page_fault_time();
 		create_event(process, RequestDisk, time, LowPriority);		
 	}
 	//this is the same for both parallel + interactive
 	//both go back in the CPU queue
 	else if(task[process].tinterrequest == 0){
-	    cout << "tinterrequest = 0" << endl;
 		task[process].tinterrequest=random_exponential(TInterRequest);
 		create_event(process, RequestDisk, time, LowPriority);	
 	}
 	else if (task[process].tcpu==0) {             /* task termination         ****/
 		if(task[process].parallel == true){
-		    cout << "tcpu = 0 parallel" << endl;
 			//the process needs to go to the barrier synchronization queue
 			task[process].tcpu=random_exponential(BarrierTime);
 			//update ts
@@ -323,7 +321,6 @@ void Process_ReleaseCPU(int process, double time){
 		}
 	    //interactive processes:  need to make a new process at the monitor
 		else{
-		    cout << "tcpu = 0 interactive" << endl;
 			task[process].tcpu=random_exponential(TCPU);
 			sum_response_time+=time-task[process].start;
 			finished_tasks++;
@@ -343,12 +340,10 @@ void Process_ReleaseCPU(int process, double time){
 		task[process].tquantum=TQuantum;
 			    //parallel processes only
 		if(task[process].parallel == true){
-		    cout << "tquant = 0 parallel" << endl;
 			create_event(process, RequestCPU, time, LowPriority);
 		}
 	    //interactive processes only
 		else{
-		    cout << "tquant = 0 interactive" << endl;
 			//first check the memory queue and put the first item into the CPU
 			int process_from_queue = remove_from_queue(MemoryQueue, time);
 			inmemory--; //we just removed a process from memory
@@ -615,7 +610,6 @@ void stats()
 	/**** Print statistics                                             ****/
  	//old code
   	//printf("utilizations are: CPU %5.2f Disk %5.2f\n", 100.0*server[0].tser/TTotal, 100.0*server[1].tser/TTotal);
-	cout << "memq wait time " << queue[MemoryQueue].waiting_time << endl;
 	double qe_mean = queue[MemoryQueue].waiting_time?queue[MemoryQueue].waiting_time/(queue[MemoryQueue].n-queue[MemoryQueue].q_length):0.0;
 	double qCPU_mean = queue[CPUQueue].waiting_time?queue[CPUQueue].waiting_time/(queue[CPUQueue].n-queue[CPUQueue].q_length):0.0;
 	double qDisk_mean = queue[DiskQueue].waiting_time?queue[DiskQueue].waiting_time/(queue[DiskQueue].n-queue[DiskQueue].q_length):0.0;
