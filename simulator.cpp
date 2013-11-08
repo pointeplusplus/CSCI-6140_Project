@@ -105,8 +105,11 @@ class Device {                              /***  Devices: 0 - CPU, 1 - Disk*/
 public:	
 	int busy;
 	double change_time;
+	double disk_change_time;
 	double tser;
 	int num_context_switches;
+	double idle_time_queues_empty;
+	double idle_time_queues_not_empty;
 };
 
 Device server[NUM_CPUs +1]; //add 1 for the disk
@@ -285,7 +288,7 @@ void Process_ReleaseCPU(int process, double time){
 	else if (task[process].tcpu==0) {             /* task termination         ****/
 		if(task[process].parallel == true){
 			//the process needs to go to the barrier synchronization queue
-			task[process].tcpu=BarrierTime;
+			task[process].tcpu=random_exponential(BarrierTime);
 			//update ts
 			barrier_synch_queue.waiting_processes.push_back(process);
 			barrier_synch_queue.ts+= (time-barrier_synch_queue.change_time)*barrier_synch_queue.waiting_processes.size();
@@ -506,7 +509,7 @@ void init()
 		}
 	    else{ //these are parallel processes
 	    	task[i].parallel = true;
-	    	task[i].tcpu=BarrierTime;
+	    	task[i].tcpu=random_exponential(BarrierTime);
 	    }
 	    create_event(i, RequestMemory, task[i].start, LowPriority);
 
