@@ -66,7 +66,7 @@ public:
 	double tquantum;
 	//added doubles for page fault and i/o
 	double t_page_fault; 
-	double t_barrier; //when parallel processes need to synch
+//	double t_barrier; //when parallel processes need to synch
 	double tinterrequest;
 	double start; 
 	bool parallel; //is this a parallel process
