@@ -144,7 +144,7 @@ double inter_page_fault_time(){
 	double page_fault_time = 0.0;
 	double instruction_fault_probability = pow(2,-(memory_allocated/160.0 + 17.0));
 
-	double average_instruction_time = HitRate * 1 + (1- HitRate) * MissCost;
+	double average_instruction_time = HitRate * 1 + (1 - HitRate) * MissCost;
 
 	//the actual time = 1/f(m)
 	page_fault_time = (1.0/instruction_fault_probability)*average_instruction_time;
@@ -199,9 +199,9 @@ int main(int argc, char *argv[])
 	while (global_time<=TTotal) {
 /***** Select the event e from the head of event list *****/
 		process=event_list.task[event_list.head];
-		cout << "Time before change: " << global_time << endl;
+		//cout << "Time before change: " << global_time << endl;
 		global_time = event_list.time[event_list.head];
-		cout << "Time after change: " << global_time << endl;
+		//cout << "Time after change: " << global_time << endl;
 		event = event_list.event[event_list.head];
 		event_list.head=(event_list.head+1)%N;
 		event_list.q_length--;
@@ -495,6 +495,7 @@ void init()
 		task[i].tquantum  =   TQuantum;
 		task[i].tinterrequest = random_exponential(TInterRequest);
 		task[i].t_page_fault = inter_page_fault_time();
+		//cout << "Page Fault Time: " << inter_page_fault_time();
 		task[i].start=random_exponential(TThink);
 		task[i].CPU_number = -1;
 
