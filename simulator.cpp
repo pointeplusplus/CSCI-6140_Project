@@ -244,7 +244,7 @@ void Process_RequestCPU(int process, double time)
 	double release_time;
 
 /**** Place in CPU queue if server is busy                       ****/
-	if (CPUs_busy) place_in_queue(process,time,CPUQueue);
+	if (CPUs_busy()) place_in_queue(process,time,CPUQueue);
 	else {
 		int CPU = free_CPU();
 		server[CPU].busy=1;
@@ -266,6 +266,7 @@ void Process_RequestCPU(int process, double time)
 }
 
 void Process_ReleaseCPU(int process, double time){
+    
 	int queue_head;
 
 	int CPU = task[process].CPU_number;
