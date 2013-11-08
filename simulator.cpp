@@ -105,11 +105,11 @@ class Device {                              /***  Devices: 0 - CPU, 1 - Disk*/
 public:	
 	int busy;
 	double change_time;
-	double disk_change_time;
+	double queue_change_time;
 	double tser;
 	int num_context_switches;
-	double idle_time_queues_empty;
-	double idle_time_queues_not_empty;
+	double idle_time_wd;
+	double idle_time_wi;
 };
 
 Device server[NUM_CPUs +1]; //add 1 for the disk
@@ -247,6 +247,13 @@ void Process_RequestCPU(int process, double time)
 	if (CPUs_busy()) place_in_queue(process,time,CPUQueue);
 	else {
 		int CPU = free_CPU();
+		if(server[CPU].busy == 0){
+		    if(queue[DiskQueue].q_length == 0) {
+			server[CPU].idle_time_wi+=time - max(server[CPU].change_time, server[CPU].queue_change_time);
+		    }
+		    else
+			server[CPU].idle_time_wd+=time - max(server[CPU].change_time, server[CPU].queue_change_time);
+		}
 		server[CPU].busy=1;
 		server[CPU].change_time=time;
 		task[process].CPU_number = CPU;
@@ -273,6 +280,7 @@ void Process_ReleaseCPU(int process, double time){
  /**** Update CPU statistics                                            ****/
 	server[CPU].busy=0;
 	server[CPU].tser+=(time-server[CPU].change_time);
+	server[CPU].change_time = time;
 	queue_head=remove_from_queue(CPUQueue, time);           /* remove head of CPU queue ****/
 	if (queue_head!=EMPTY) create_event(queue_head, RequestCPU, time, HighPriority);
 	/**** Depending on reason for leaving CPU, select the next event       ****/
@@ -358,7 +366,7 @@ void Process_ReleaseCPU(int process, double time){
   	else { //
     	//should never happen for interactive processes
   		if(task[process].parallel == false){
-  			assert(false);
+		    //assert(false);
   		}
   		else{
   			barrier_synch_queue.waiting_processes.push_back(process);
@@ -383,7 +391,17 @@ void Process_ReleaseCPU(int process, double time){
 void Process_RequestDisk(int process, double time)
 {
 /**** If Disk busy go to Disk queue, if not create Process_ReleaseDisk event    ****/
-	if (server[DISK].busy) place_in_queue(process,time,DiskQueue);
+	if (server[DISK].busy) {
+	    if(queue[DiskQueue].q_length == 0) {
+		for(int c = 1; c < NUM_CPUs; c++){
+		    if(server[c].busy == 0){
+			server[c].idle_time_wi+=time - max(server[c].change_time, server[c].queue_change_time);
+			server[c].queue_change_time = time;
+		    }
+		}
+	    }
+	    place_in_queue(process,time,DiskQueue);
+	}
 	else {
 		server[DISK].busy=1;
 		server[DISK].change_time=time;
@@ -398,6 +416,14 @@ void Process_ReleaseDisk(int process, double time)
 	server[DISK].busy=0;
 	server[DISK].tser+=(time-server[DISK].change_time);
 	queue_head=remove_from_queue(DiskQueue, time);
+	if(queue[DiskQueue].q_length > 0){
+	    for(int c = 0; c < NUM_CPUs; c++){
+		if(server[c].busy == 0) {
+		    server[c].idle_time_wd+=time - max(server[c].change_time, server[c].queue_change_time);
+		    server[c].queue_change_time = time;
+		}
+	    }
+	}
 	if (queue_head!=EMPTY) 
 		create_event(queue_head, RequestDisk, time, HighPriority);
 	create_event(process, RequestCPU, time, LowPriority);
