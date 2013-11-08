@@ -151,7 +151,7 @@ double inter_page_fault_time(){
 
 	//the actual time = 1/f(m)
 	page_fault_time = (1.0/instruction_fault_probability)*average_instruction_time;
-	return page_fault_time;
+	return page_fault_time*pow(10,-9);
 }
 
 bool CPUs_busy(){
@@ -200,6 +200,12 @@ int main(int argc, char *argv[])
 	init();
 /***** Main simulation loop *****/
 	while (global_time<=TTotal) {
+
+		//Debug section
+		cout << "Global time: " << global_time << endl;
+		cout << "Event queue length: " << event_list.q_length << endl;
+
+		//End debug
 /***** Select the event e from the head of event list *****/
 		process=event_list.task[event_list.head];
 		//cout << "Time before change: " << global_time << endl;
@@ -441,9 +447,7 @@ int remove_from_queue(int current_queue, double time)
 	if (queue[current_queue].q_length>0) {
 		process=queue[current_queue].task[queue[current_queue].head];
 /**** Update statistics for the queue                               ****/
-		queue[current_queue].waiting_time+=time
-		-queue[current_queue].entry_times
-		[queue[current_queue].head];
+		queue[current_queue].waiting_time+=time -queue[current_queue].entry_times[queue[current_queue].head];
 		queue[current_queue].ts+=
 		(time-queue[current_queue].change_time)*queue[current_queue].q_length;
 		queue[current_queue].q_length--;
@@ -609,9 +613,9 @@ void stats()
 	/**** Print statistics                                             ****/
  	//old code
   	//printf("utilizations are: CPU %5.2f Disk %5.2f\n", 100.0*server[0].tser/TTotal, 100.0*server[1].tser/TTotal);
-	int qe_mean = queue[MemoryQueue].waiting_time?queue[MemoryQueue].waiting_time/(queue[MemoryQueue].n-queue[MemoryQueue].q_length):0.0;
-	int qCPU_mean = queue[CPUQueue].waiting_time?queue[CPUQueue].waiting_time/(queue[CPUQueue].n-queue[CPUQueue].q_length):0.0;
-	int qDisk_mean = queue[DiskQueue].waiting_time?queue[DiskQueue].waiting_time/(queue[DiskQueue].n-queue[DiskQueue].q_length):0.0;
+	double qe_mean = queue[MemoryQueue].waiting_time?queue[MemoryQueue].waiting_time/(queue[MemoryQueue].n-queue[MemoryQueue].q_length):0.0;
+	double qCPU_mean = queue[CPUQueue].waiting_time?queue[CPUQueue].waiting_time/(queue[CPUQueue].n-queue[CPUQueue].q_length):0.0;
+	double qDisk_mean = queue[DiskQueue].waiting_time?queue[DiskQueue].waiting_time/(queue[DiskQueue].n-queue[DiskQueue].q_length):0.0;
 
 	cout << "mean waiting time in qe "<< qe_mean << " qCPU "<< qCPU_mean << " qDisk " << qDisk_mean 
 		<< "barrier " << barrier_synch_queue.ts/6 << " total barrier wait " << barrier_synch_queue.ts <<endl;
