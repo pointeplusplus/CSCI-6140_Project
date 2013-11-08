@@ -41,6 +41,7 @@
 #define MissCost 51
 
 #define NUM_CPUs 4
+#define Num_Parallel 0
 //#define CPU 1
 #define DISK 0
 #define EMPTY -1
@@ -201,11 +202,6 @@ int main(int argc, char *argv[])
 /***** Main simulation loop *****/
 	while (global_time<=TTotal) {
 
-		//Debug section
-		cout << "Global time: " << global_time << endl;
-		cout << "Event queue length: " << event_list.q_length << endl;
-
-		//End debug
 /***** Select the event e from the head of event list *****/
 		process=event_list.task[event_list.head];
 		//cout << "Time before change: " << global_time << endl;
@@ -311,7 +307,7 @@ void Process_ReleaseCPU(int process, double time){
 			barrier_synch_queue.change_time = time;
 			finished_parallel_tasks++;
 
-			if (barrier_synch_queue.waiting_processes.size() >= 6) {
+			if (barrier_synch_queue.waiting_processes.size() >= Num_Parallel) {
 				//don't have to update ts because we just did when the 6th one was added
 				for(list<int>::iterator b = barrier_synch_queue.waiting_processes.begin();
 					b != barrier_synch_queue.waiting_processes.end(); b++ ) {
@@ -369,6 +365,7 @@ void Process_ReleaseCPU(int process, double time){
 		}
 	}
  	//the only thing left is barrier synchronization
+ 	/*
   	else { //
     	//should never happen for interactive processes
   		if(task[process].parallel == false){
@@ -391,7 +388,8 @@ void Process_ReleaseCPU(int process, double time){
 
   		}
 
-  	}	
+
+  	}	*/
 }
 
 void Process_RequestDisk(int process, double time)
@@ -525,7 +523,7 @@ void init()
 	barrier_synch_queue.change_time = 0;
 	barrier_synch_queue.waiting_processes.clear();
 
-	for(i=0;i<N+6;i++) {
+	for(i=0;i<N+Num_Parallel;i++) {
 	    /**** Create a new task                                          ****/
 
 	    //all processes have this
@@ -589,8 +587,7 @@ void stats()
 	double Ucpu_ps_avg = 0.0;
 	//CPUs
 	for(int CPU = 1; CPU < NUM_CPUs+1; CPU++){
-		//pups = utilization - context switches for CPU/total time 
-		double pups = 100.0*((double)server[CPU].tser - (server[CPU].num_context_switches*context_switch_time))/TTotal;
+		double pups = 100.0*((double)server[CPU].tser - ((double)server[CPU].num_context_switches*(double)context_switch_time))/(double)TTotal;
 		double wi = 100.0*server[CPU].idle_time_wi/TTotal;
 		double wd = 100.0*server[CPU].idle_time_wd/TTotal;
 		cout << "CPU  " << CPU <<  " Ucpu " << 100.0*server[CPU].tser/TTotal << " Ucpu-wi  " << wi << " Ucpu-wd " << wd << " Ucpups " << pups << endl;
