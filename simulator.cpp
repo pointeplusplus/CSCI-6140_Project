@@ -583,9 +583,9 @@ void stats()
 	//CPUs
 	for(int CPU = 1; CPU < NUM_CPUs+1; CPU++){
 		//pups = utilization - context switches for CPU/total time 
-		double pups = 100*((double)server[CPU].tser - (server[CPU].num_context_switches*context_switch_time))/TTotal;
-		double wi = 0;
-		double wd = 0;
+		double pups = 100.0*((double)server[CPU].tser - (server[CPU].num_context_switches*context_switch_time))/TTotal;
+		double wi = 100.0*server[CPU].idle_time_wi/TTotal;
+		double wd = 100.0*server[CPU].idle_time_wd/TTotal;
 		cout << "CPU  " << CPU <<  " Ucpu " << 100.0*server[CPU].tser/TTotal << " Ucpu-wi  " << wi << " Ucpu-wd " << wd << " Ucpups " << pups << endl;
 		//get the sum of the doubles above
 		Ucpu_avg += (100.0*server[CPU].tser/TTotal);
