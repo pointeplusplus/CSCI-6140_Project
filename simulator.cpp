@@ -562,7 +562,7 @@ void stats()
 	printf("System definitions: N %2d MPL %2d TTotal %6.0f\n",N, MPL, TTotal);
 
 	 //total simulation stats
-	cout << "m " << m << " amat " << amat <<  " TIP " << tinterpage << endl; 
+	cout << "m " << m << " amat " << amat <<  " TIP " << inter_page_fault_time() << endl; 
 
 
 	/**** Update utilizations                                          ****/
