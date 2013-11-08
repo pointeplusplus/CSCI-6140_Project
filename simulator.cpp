@@ -618,7 +618,7 @@ void stats()
 	double qDisk_mean = queue[DiskQueue].waiting_time?queue[DiskQueue].waiting_time/(queue[DiskQueue].n-queue[DiskQueue].q_length):0.0;
 
 	cout << "mean waiting time in qe "<< qe_mean << " qCPU "<< qCPU_mean << " qDisk " << qDisk_mean 
-		<< "barrier " << barrier_synch_queue.ts/6 << " total barrier wait " << barrier_synch_queue.ts <<endl;
+		<< " barrier " << barrier_synch_queue.ts/6 << " total barrier wait " << barrier_synch_queue.ts <<endl;
 
 	printf("mean queue length in qe %5.2f qCPU %5.2f qDisk %5.2f\n", 
 		queue[MemoryQueue].change_time?queue[MemoryQueue].ts/queue[MemoryQueue].change_time:0.0,
