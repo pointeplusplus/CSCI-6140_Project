@@ -298,9 +298,9 @@ void Process_ReleaseCPU(int process, double time){
 				for(list<int>::iterator b = barrier_synch_queue.waiting_processes.begin();
 					b != barrier_synch_queue.waiting_processes.end(); b++ ) {
 
-					task[*b].t_barrier = BarrierTime;
 					create_event(*b, RequestCPU, time, LowPriority);
 				}
+				barrier_synch_queue.waiting_processes.clear();
 			}
 
 		}
@@ -326,11 +326,11 @@ void Process_ReleaseCPU(int process, double time){
 			    //parallel processes only
 		if(task[process].parallel == true){	
 			create_event(process, RequestCPU, time, LowPriority);
-	}
+		}
 	    //interactive processes only
-	else{
+		else{
 			//first check the memory queue and put the first item into the CPU
-		int process_from_queue = remove_from_queue(MemoryQueue, time);
+			int process_from_queue = remove_from_queue(MemoryQueue, time);
 			inmemory--; //we just removed a process from memory
 
 			//this means we got a process form the queue
@@ -366,9 +366,9 @@ void Process_ReleaseCPU(int process, double time){
   				for(list<int>::iterator b = barrier_synch_queue.waiting_processes.begin();
   					b != barrier_synch_queue.waiting_processes.end(); b++ ) {
 
-  					task[*b].t_barrier = BarrierTime;
   					create_event(*b, RequestCPU, time, LowPriority);
   				}
+				barrier_synch_queue.waiting_processes.clear();
   			}
 
   		}
