@@ -157,7 +157,7 @@ double inter_page_fault_time(){
 bool CPUs_busy(){
 	bool busy = true;
 	//start at 1 to avoid disk
-	for(int c = 1; c < NUM_CPUs; c++){
+	for(int c = 1; c < NUM_CPUs+1; c++){
 		if (server[c].busy == 0){
 			busy = false;
 		}
@@ -393,7 +393,7 @@ void Process_RequestDisk(int process, double time)
 /**** If Disk busy go to Disk queue, if not create Process_ReleaseDisk event    ****/
 	if (server[DISK].busy) {
 	    if(queue[DiskQueue].q_length == 0) {
-		for(int c = 1; c < NUM_CPUs; c++){
+		for(int c = 1; c < NUM_CPUs+1; c++){
 		    if(server[c].busy == 0){
 			server[c].idle_time_wi+=time - max(server[c].change_time, server[c].queue_change_time);
 			server[c].queue_change_time = time;
@@ -417,11 +417,11 @@ void Process_ReleaseDisk(int process, double time)
 	server[DISK].tser+=(time-server[DISK].change_time);
 	queue_head=remove_from_queue(DiskQueue, time);
 	if(queue[DiskQueue].q_length > 0){
-	    for(int c = 0; c < NUM_CPUs; c++){
-		if(server[c].busy == 0) {
-		    server[c].idle_time_wd+=time - max(server[c].change_time, server[c].queue_change_time);
-		    server[c].queue_change_time = time;
-		}
+	    for(int c = 1; c < NUM_CPUs+1; c++){
+			if(server[c].busy == 0) {
+			    server[c].idle_time_wd+=time - max(server[c].change_time, server[c].queue_change_time);
+			    server[c].queue_change_time = time;
+			}
 	    }
 	}
 	if (queue_head!=EMPTY) 
@@ -512,6 +512,9 @@ void init()
 		server[i].busy=0;
 		server[i].change_time=server[i].tser=0.0;
 		server[i].num_context_switches = 0;
+		server[i].queue_change_time = 0;
+		server[i].idle_time_wd =0;
+		server[i].idle_time_wi = 0;
 	}
 	//initialize barrier queue
 	barrier_synch_queue.ts = 0;
