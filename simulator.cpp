@@ -199,7 +199,9 @@ int main(int argc, char *argv[])
 	while (global_time<=TTotal) {
 /***** Select the event e from the head of event list *****/
 		process=event_list.task[event_list.head];
+		cout << "Time before change: " << global_time << endl;
 		global_time = event_list.time[event_list.head];
+		cout << "Time after change: " << global_time << endl;
 		event = event_list.event[event_list.head];
 		event_list.head=(event_list.head+1)%N;
 		event_list.q_length--;
