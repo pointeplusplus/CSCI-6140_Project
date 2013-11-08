@@ -23,7 +23,7 @@
 #define BarrierTime 400
 
 //Parameters given in the lecture slide
-#define context_switich_time 0.5 //context switching times
+#define context_switch_time 0.5 //context switching times
 #define MemoryQueue 0
 #define CPUQueue 1
 #define DiskQueue 2
@@ -249,14 +249,14 @@ void Process_RequestCPU(int process, double time)
 		if (task[process].tcpu<task[process].tquantum) release_time=task[process].tcpu;
 		else release_time=task[process].tquantum;
 		if (release_time>task[process].tinterrequest) release_time=task[process].tinterrequest;
-		if (task[process].t_page_fault >= 0 && release_time>task[process].t_page_fault) release_time=task[process].t_page_fault;
+		if (release_time>task[process].t_page_fault) release_time=task[process].t_page_fault;
 /**** Update the process times and create Process_ReleaseCPU event           ****/
 		task[process].tcpu-=release_time;
 		task[process].tinterrequest-=release_time;
 		task[process].tquantum-=release_time;
 		task[process].t_page_fault-=release_time;
 		server[CPU].num_context_switches++;
-		create_event(process, ReleaseCPU, time+release_time+context_switich_time, LowPriority);
+		create_event(process, ReleaseCPU, time+release_time+context_switch_time, LowPriority);
 	}
 }
 
@@ -551,7 +551,7 @@ void stats()
 	//CPUs
 	for(int CPU = 1; CPU < NUM_CPUs+1; CPU++){
 		//pups = utilization - context switches for CPU/total time 
-		double pups = 100*((double)server[CPU].tser - (server[CPU].num_context_switches*context_switich_time))/TTotal;
+		double pups = 100*((double)server[CPU].tser - (server[CPU].num_context_switches*context_switch_time))/TTotal;
 		double wi = 0;
 		double wd = 0;
 		cout << "CPU  " << CPU <<  " Ucpu " << 100.0*server[CPU].tser/TTotal << " Ucpu-wi  " << wi << " Ucpu-wd " << wd << " Ucpups " << pups << endl;
