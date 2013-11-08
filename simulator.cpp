@@ -525,7 +525,7 @@ void stats()
 	double tinterio = 0.016/amatstart*amat;
 
 	double tt = TThink;
-	//tinterpage = 0.5^(-m/160.0-17.0)*10.0^(-9.0)*amat;
+	double tinterpage = pow(0.5,(-m/160.0-17.0))*pow(10.0,(-9.0)*amat);
 
 	printf("System definitions: N %2d MPL %2d TTotal %6.0f\n",N, MPL, TTotal);
 
@@ -536,7 +536,7 @@ void stats()
 	/**** Update utilizations                                          ****/
 
 	//for multiple CPUs
-	for(int CPU = 0; CPU < server.length(); CPU++){
+	for(int CPU = 0; CPU < NUM_CPUs + 1; CPU++){
 		if (server[CPU].busy==1) server[CPU].tser+=(TTotal-server[CPU].change_time);
 	}
 	//old code
@@ -590,7 +590,7 @@ void stats()
 		queue[CPUQueue].n-queue[CPUQueue].q_length, 
 		queue[DiskQueue].n-queue[DiskQueue].q_length);
 	cout << "average response time " << sum_response_time/finished_tasks <<  "processes finished " 
-	<< inished_tasks << " parallel tasks finished " << finished_parallel_tasks << endlg; 
+	     << finished_tasks << " parallel tasks finished " << finished_parallel_tasks << endl;
 }
 
 /*------------------------------ Random Number Generator --------------------------*/
