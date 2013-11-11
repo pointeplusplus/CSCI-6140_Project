@@ -40,8 +40,7 @@
 #define MissCost 51
 
 #define NUM_CPUs 4
-#define Num_Parallel 6
-//#define CPU 1
+#define Num_Parallel 2
 #define DISK 0
 #define EMPTY -1
 #define LowPriority 0
@@ -143,6 +142,10 @@ double erand48(unsigned short xsubi[3]), random_exponential(double);            
 void place_in_queue(int, double, int), create_event(int, int, double, int), init(), 
 stats();
 
+//debug
+int barrier_times = 0;
+int adding_to_barrier = 0;
+
 //gets inter page fault time 
 double inter_page_fault_time(){
 	//f(m)
@@ -153,7 +156,7 @@ double inter_page_fault_time(){
 
 	//the actual time = 1/f(m)
 	page_fault_time = (1.0/instruction_fault_probability)*average_instruction_time;
-	return page_fault_time*pow(10,-6);
+	return random_exponential(page_fault_time*pow(10,-6));
 }
 
 bool CPUs_busy(){
@@ -301,8 +304,13 @@ void Process_ReleaseCPU(int process, double time){
 		if(task[process].parallel == true){
 			//the process needs to go to the barrier synchronization queue
 			task[process].tcpu=random_exponential(BarrierTime);
+			task[process].tinterrequest = random_exponential(TInterRequest);
+			task[process].t_page_fault = inter_page_fault_time();
+			task[process].tquantum  =   TQuantum;
 			//update ts
 			barrier_synch_queue.waiting_processes.push_back(process);
+
+			cout << "Barrier Queue Size: " << barrier_synch_queue.waiting_processes.size () << " and global time: " << time << endl;
 			barrier_synch_queue.ts+= (time-barrier_synch_queue.change_time)*barrier_synch_queue.waiting_processes.size();
 			//change time after ts calculation
 			barrier_synch_queue.change_time = time;
@@ -312,10 +320,10 @@ void Process_ReleaseCPU(int process, double time){
 				//don't have to update ts because we just did when the 6th one was added
 				for(list<int>::iterator b = barrier_synch_queue.waiting_processes.begin();
 					b != barrier_synch_queue.waiting_processes.end(); b++ ) {
-
 					create_event(*b, RequestCPU, time, LowPriority);
 				}
 				barrier_synch_queue.waiting_processes.clear();
+				barrier_times++; //debug
 			}
 
 		}
@@ -627,6 +635,8 @@ void stats()
 		queue[DiskQueue].n-queue[DiskQueue].q_length);
 	cout << "average response time " << sum_response_time/finished_tasks <<  "processes finished " 
 	     << finished_tasks << " parallel tasks finished " << finished_parallel_tasks << endl;
+
+	cout << "Number of times releasing parallel processing:  " << barrier_times << " " << TTotal/barrier_times << endl;
 }
 
 /*------------------------------ Random Number Generator --------------------------*/
