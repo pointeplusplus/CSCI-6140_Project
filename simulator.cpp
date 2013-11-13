@@ -40,7 +40,7 @@
 #define MissCost 51
 
 #define NUM_CPUs 4
-#define Num_Parallel 2
+#define Num_Parallel 6
 #define DISK 0
 #define EMPTY -1
 #define LowPriority 0
@@ -136,6 +136,7 @@ int finished_parallel_tasks = 0;
 double sum_response_time=0.0;
 double TTotal=TTS;
 double memory_allocated=0.0;
+double TIP = 0;
 void Process_RequestMemory(int, double), Process_RequestCPU(int, double),   /****  Event procedures      ****/
 Process_ReleaseCPU(int, double), Process_RequestDisk(int, double), Process_ReleaseDisk(int, double);   
 double erand48(unsigned short xsubi[3]), random_exponential(double);                         /****  Auxiliary functions   ****/
@@ -156,7 +157,8 @@ double inter_page_fault_time(){
 
 	//the actual time = 1/f(m)
 	page_fault_time = (1.0/instruction_fault_probability)*average_instruction_time;
-	return random_exponential(page_fault_time*pow(10,-6));
+	TIP = page_fault_time*pow(10,-6);
+	return random_exponential(TIP);
 }
 
 bool CPUs_busy(){
@@ -238,11 +240,15 @@ int main(int argc, char *argv[])
 void Process_RequestMemory(int process, double time)
 {
 /**** Create a Process_RequestCPU event or place a task in memory queue      ****/
+    cout<<"inmemory: " << inmemory << " MPL: " << MPL << endl;
+    cout<<"parallel?: "<< task[process].parallel << endl;
 	if (inmemory<MPL) {
 		inmemory++;
 		create_event(process, RequestCPU, time, LowPriority);
 	}
-	else place_in_queue(process, time, MemoryQueue);
+	else {
+	    place_in_queue(process, time, MemoryQueue);
+	    cout<<"Something is going in the memQ"<<endl; }
 }
 
 void Process_RequestCPU(int process, double time)
@@ -268,6 +274,7 @@ void Process_RequestCPU(int process, double time)
 		else release_time=task[process].tquantum;
 		if (release_time>task[process].tinterrequest) release_time=task[process].tinterrequest;
 		if (release_time>task[process].t_page_fault) release_time=task[process].t_page_fault;
+
 /**** Update the process times and create Process_ReleaseCPU event           ****/
 		task[process].tcpu-=release_time;
 		task[process].tinterrequest-=release_time;
@@ -310,7 +317,7 @@ void Process_ReleaseCPU(int process, double time){
 			//update ts
 			barrier_synch_queue.waiting_processes.push_back(process);
 
-			cout << "Barrier Queue Size: " << barrier_synch_queue.waiting_processes.size () << " and global time: " << time << endl;
+			cout << "Barrier Queue Size: " << barrier_synch_queue.waiting_processes.size() << " and global time: " << time << endl;
 			barrier_synch_queue.ts+= (time-barrier_synch_queue.change_time)*barrier_synch_queue.waiting_processes.size();
 			//change time after ts calculation
 			barrier_synch_queue.change_time = time;
@@ -353,14 +360,14 @@ void Process_ReleaseCPU(int process, double time){
 	    //interactive processes only
 		else{
 			//first check the memory queue and put the first item into the CPU
-			int process_from_queue = remove_from_queue(MemoryQueue, time);
-			inmemory--; //we just removed a process from memory
+			queue_head = remove_from_queue(MemoryQueue, time);
+			//inmemory--; //we just removed a process from memory
 
 			//this means we got a process form the queue
-			if(process_from_queue != -1){
+			if(queue_head != EMPTY){
 				//put this process in CPU
-				inmemory++; //adding a process to the CPU queue
-				create_event(process_from_queue, RequestCPU, time, HighPriority);
+				//inmemory++; //adding a process to the CPU queue
+				create_event(queue_head, RequestMemory, time, HighPriority);
 
 
 			}
@@ -451,10 +458,16 @@ int remove_from_queue(int current_queue, double time)
 	int process;
 
 /**** If queue not empty, remove the head of the queue              ****/
+	if(current_queue == MemoryQueue) {
+	    cout<<"Removing from memory queue, length: "<< queue[current_queue].q_length<<endl;
+	}
 	if (queue[current_queue].q_length>0) {
 		process=queue[current_queue].task[queue[current_queue].head];
 /**** Update statistics for the queue                               ****/
 		queue[current_queue].waiting_time+=time-queue[current_queue].entry_times[queue[current_queue].head];
+		if(current_queue == MemoryQueue) {
+		    cout<<"Queue wating time: "<<queue[current_queue].waiting_time<<endl;
+		}
 		queue[current_queue].ts+=(time-queue[current_queue].change_time)*queue[current_queue].q_length;
 		queue[current_queue].q_length--;
 		queue[current_queue].change_time=time;
@@ -575,7 +588,7 @@ void stats()
 	printf("System definitions: N %2d MPL %2d TTotal %6.0f\n",N, MPL, TTotal);
 
 	 //total simulation stats
-	cout << "m " << m << " amat " << amat <<  " TIP " << inter_page_fault_time() << endl; 
+	cout << "m " << m << " amat " << amat <<  " TIP " << TIP << endl; 
 
 
 	/**** Update utilizations                                          ****/
