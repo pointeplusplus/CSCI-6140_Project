@@ -11,12 +11,12 @@
 
 /***** Define simulation *****/
 #define MS 1
-#define NS 9001
+#define NS 9000
 #define TCPU 40
 #define TQuantum 100
 #define TInterRequest 16 //this is the i/o request time
 #define TDiskService 10
-#define TThink 5
+#define TThink 5000
 #define TTS 1000000
 #define FreeSystemMemory 7680
 #define BarrierTime 400
@@ -248,7 +248,8 @@ void Process_RequestMemory(int process, double time)
 	}
 	else {
 	    place_in_queue(process, time, MemoryQueue);
-	    cout<<"Something is going in the memQ"<<endl; }
+	    cout<<"Something is going in the memQ"<<endl;
+	}
 }
 
 void Process_RequestCPU(int process, double time)
@@ -297,18 +298,21 @@ void Process_ReleaseCPU(int process, double time){
 	queue_head=remove_from_queue(CPUQueue, time);           /* remove head of CPU queue ****/
 	if (queue_head!=EMPTY) create_event(queue_head, RequestCPU, time, HighPriority);
 	/**** Depending on reason for leaving CPU, select the next event       ****/
-	if(task[process].t_page_fault ==  0){
+	if(task[process].t_page_fault <=  0){
+	    //cout<<"page fault"<<endl;
 		task[process].t_page_fault = inter_page_fault_time();
 		create_event(process, RequestDisk, time, LowPriority);		
 	}
 	//this is the same for both parallel + interactive
 	//both go back in the CPU queue
-	else if(task[process].tinterrequest == 0){
+	else if(task[process].tinterrequest <= 0){
+	    //cout<<"disk request"<<endl;
 		task[process].tinterrequest=random_exponential(TInterRequest);
 		create_event(process, RequestDisk, time, LowPriority);	
 	}
-	else if (task[process].tcpu==0) {             /* task termination         ****/
+	else if (task[process].tcpu <= 0) {             /* task termination         ****/
 		if(task[process].parallel == true){
+		    //    cout<<"tcpu, parallel"<<endl;
 			//the process needs to go to the barrier synchronization queue
 			task[process].tcpu=random_exponential(BarrierTime);
 			task[process].tinterrequest = random_exponential(TInterRequest);
@@ -336,6 +340,7 @@ void Process_ReleaseCPU(int process, double time){
 		}
 	    //interactive processes:  need to make a new process at the monitor
 		else{
+		    // cout<<"tcpu, interactive"<<endl;
 			task[process].tcpu=random_exponential(TCPU);
 			sum_response_time+=time-task[process].start;
 			finished_tasks++;
@@ -350,15 +355,17 @@ void Process_ReleaseCPU(int process, double time){
 			if (queue_head!=EMPTY) create_event(queue_head, RequestMemory, time, HighPriority);
 		}
 	}
-  	else if (task[process].tquantum==0) {          /* time slice interrupt     ****/
+  	else if (task[process].tquantum <= 0) {          /* time slice interrupt     ****/
 
 		task[process].tquantum=TQuantum;
 			    //parallel processes only
 		if(task[process].parallel == true){
+		    // cout<<"time quantum parallel"<<endl;
 			create_event(process, RequestCPU, time, LowPriority);
 		}
 	    //interactive processes only
 		else{
+		    // cout<<"time quantum interactive"<<endl;
 			//first check the memory queue and put the first item into the CPU
 			queue_head = remove_from_queue(MemoryQueue, time);
 			//inmemory--; //we just removed a process from memory
@@ -560,11 +567,11 @@ void init()
 			task[i].parallel = false;
 			task[i].tcpu=random_exponential(TCPU);
 		}
-	    else{ //these are parallel processes
-	    	task[i].parallel = true;
-	    	task[i].tcpu=random_exponential(BarrierTime);
-	    }
-	    create_event(i, RequestMemory, task[i].start, LowPriority);
+		else{ //these are parallel processes
+		    task[i].parallel = true;
+		    task[i].tcpu=random_exponential(BarrierTime);
+		}
+		create_event(i, RequestMemory, task[i].start, LowPriority);
 
 	}
 
