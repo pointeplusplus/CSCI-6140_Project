@@ -365,10 +365,11 @@ void Process_ReleaseCPU(int process, double time){
 	}
 	//interactive processes only
 	else{
+
+	    inmemory--; //we just removed a process from memory
 	    //cout<<"time quantum interactive"<<endl;
 	    //first check the memory queue and put the first item into the CPU
 	    queue_head = remove_from_queue(MemoryQueue, time);
-	    //inmemory--; //we just removed a process from memory
 
 	    //this means we got a process form the queue
 	    if(queue_head != EMPTY){
@@ -650,13 +651,14 @@ void stats()
 		queue[CPUQueue].change_time?queue[CPUQueue].ts/queue[CPUQueue].change_time:0.0, 
 		queue[DiskQueue].change_time?queue[DiskQueue].ts/queue[DiskQueue].change_time:0.0);
 	printf("number of visits in qe  %5d qCPU %5d qDisk %5d\n", 
-		queue[0].n-queue[0].q_length,
+		queue[MemoryQueue].n-queue[MemoryQueue].q_length,
 		queue[CPUQueue].n-queue[CPUQueue].q_length, 
 		queue[DiskQueue].n-queue[DiskQueue].q_length);
 	cout << "average response time " << sum_response_time/finished_tasks <<  "processes finished " 
 	     << finished_tasks << " parallel tasks finished " << finished_parallel_tasks << endl;
 
 	cout << "Number of times releasing parallel processing:  " << barrier_times << " " << TTotal/barrier_times << endl;
+
 }
 
 /*------------------------------ Random Number Generator --------------------------*/
