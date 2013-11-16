@@ -388,32 +388,6 @@ void Process_ReleaseCPU(int process, double time){
 
 	}
     }
-    //the only thing left is barrier synchronization
-    /*
-      else { //
-      //should never happen for interactive processes
-      if(task[process].parallel == false){
-      //assert(false);
-      }
-      else{
-      barrier_synch_queue.waiting_processes.push_back(process);
-      //update ts
-      barrier_synch_queue.ts+= (time-barrier_synch_queue.change_time)*barrier_synch_queue.waiting_processes.size();
-      //update change_time after ts
-      barrier_synch_queue.change_time = time;
-      if (barrier_synch_queue.waiting_processes.size() >= 6) {
-      for(list<int>::iterator b = barrier_synch_queue.waiting_processes.begin();
-      b != barrier_synch_queue.waiting_processes.end(); b++ ) {
-
-      create_event(*b, RequestCPU, time, LowPriority);
-      }
-      barrier_synch_queue.waiting_processes.clear();
-      }
-
-      }
-
-
-      }	*/
 }
 
 void Process_RequestDisk(int process, double time)
@@ -645,6 +619,8 @@ void stats()
 
     cout << "mean waiting time in qe "<< qe_mean << " qCPU "<< qCPU_mean << " qDisk " << qDisk_mean 
 	 << " barrier " << barrier_synch_queue.ts/(barrier_times*Num_Parallel) << " total barrier wait " << barrier_synch_queue.ts/(barrier_times) <<endl;
+    cout<<"barrier ts: "<<barrier_synch_queue.ts<<endl;
+    cout<<"number of barrier fills: "<<barrier_times<<endl;
 
 	printf("mean queue length in qe %5.2f qCPU %5.2f qDisk %5.2f\n", 
 		queue[MemoryQueue].change_time?queue[MemoryQueue].ts/queue[MemoryQueue].change_time:0.0,
@@ -654,7 +630,7 @@ void stats()
 		queue[MemoryQueue].n-queue[MemoryQueue].q_length,
 		queue[CPUQueue].n-queue[CPUQueue].q_length, 
 		queue[DiskQueue].n-queue[DiskQueue].q_length);
-	cout << "average response time " << sum_response_time/finished_tasks <<  "processes finished " 
+	cout << "average response time " << sum_response_time/finished_tasks <<  " processes finished " 
 	     << finished_tasks << " parallel tasks finished " << finished_parallel_tasks << endl;
 
 	cout << "Number of times releasing parallel processing:  " << barrier_times << " " << TTotal/barrier_times << endl;
