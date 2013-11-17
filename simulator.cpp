@@ -12,14 +12,14 @@
 /***** Define simulation *****/
 #define MS 1
 #define NS 9000
-#define TCPU 40
 #define TQuantum 100
-#define TInterRequest 16 //this is the i/o request time
 #define TDiskService 10
 #define TThink 5000
 #define TTS 1000000
 #define FreeSystemMemory 7680
+/*#define TCPU 40 These are now global variables based on MissRate
 #define BarrierTime 400
+#define TInterRequest 16*/ //this is the i/o request time
 
 //Parameters given in the lecture slide
 #define context_switch_time 0.5 //context switching times
@@ -36,11 +36,11 @@
 #define ReleaseDisk 4
 
 //cache stats
-#define HitRate .98
+#define MissRate .02
 #define MissCost 51
 
 #define NUM_CPUs 4
-#define NUM_Disks 4
+#define NUM_Disks 1
 #define Num_Parallel 6
 //#define DISK 0
 #define EMPTY -1
@@ -135,21 +135,28 @@ int TotQueues = 2 + NUM_Disks;
 
 int finished_parallel_tasks = 0;
 
+double TCPU = 20*(MissRate*50 + 1);
+double BarrierTime = 1000*(MissRate*50 + 1); //This is calculated assuming the original tbs was 2sec, needs to
+                                             //be changed for simulation with tbs = .4 sec
+double TInterRequest = 8*(MissRate*50 + 1);
+
 
 double sum_response_time=0.0;
 double TTotal=TTS;
 double memory_allocated=0.0;
 double TIP = 0;
 int next_disk = 2; 
+
+int barrier_times = 0;
+//debug
+int adding_to_barrier = 0;
+
 void Process_RequestMemory(int, double), Process_RequestCPU(int, double),   /****  Event procedures      ****/
     Process_ReleaseCPU(int, double), Process_RequestDisk(int, double), Process_ReleaseDisk(int, double);   
 double erand48(unsigned short xsubi[3]), random_exponential(double);                         /****  Auxiliary functions   ****/
 void place_in_queue(int, double, int), create_event(int, int, double, int), init(), 
     stats();
 
-int barrier_times = 0;
-//debug
-int adding_to_barrier = 0;
 
 //gets inter page fault time 
 double inter_page_fault_time(){
@@ -157,7 +164,7 @@ double inter_page_fault_time(){
     double page_fault_time = 0.0;
     double instruction_fault_probability = pow(2,-(memory_allocated/160.0 + 17.0));
 
-    double average_instruction_time = (HitRate * 1 + (1 - HitRate) * MissCost);
+    double average_instruction_time = ((1-MissRate) * 1 + MissRate * MissCost);
 
     //the actual time = 1/f(m)
     page_fault_time = (1.0/instruction_fault_probability)*average_instruction_time;
