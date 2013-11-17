@@ -25,8 +25,8 @@
 #define context_switch_time 0.5 //context switching times
 #define MemoryQueue 0
 #define CPUQueue 1
-#define DiskQueue 2
-#define TotQueues 3
+//#define DiskQueue 2
+//#define TotQueues 3
 
 //Event types mapped to integers (used in create_event)
 #define RequestMemory 0
@@ -40,8 +40,9 @@
 #define MissCost 51
 
 #define NUM_CPUs 4
+#define NUM_Disks 4
 #define Num_Parallel 6
-#define DISK 0
+//#define DISK 0
 #define EMPTY -1
 #define LowPriority 0
 #define HighPriority 1
@@ -72,6 +73,7 @@ public:
 	double start; 
 	bool parallel; //is this a parallel process
 	int CPU_number;
+	int disk_number;
 };  /**** Job list       ****/
 
 	Task task[NS];
@@ -87,7 +89,7 @@ public:
 
 Events event_list;
 
-class Queue {  /**** Queues: 0 - memory queue, 1 - CPU queue, 2 - Disk queue*/
+class Queue {  /**** Queues: 0 - memory queue, 1 - CPU queue, 2..NUM_Disks+2 Disk queues*/
 public:	
 	int head;
 	int tail;
@@ -100,9 +102,9 @@ public:
 	double entry_times[NS]; //entry times for N processes (NS = N) (was tentry[NS])
 };
 
-Queue queue[3];
+Queue queue[NUM_Disks+2];
 
-class Device {                              /***  Devices: 0 - Disk, 1-4 - CPUs*/
+class Device {                              /***  Devices: 0...NUM_Disks Disks, NUM_Disks...(NUM_Disks + NUM_CPUs) CPUs*/
 public:	
 	int busy;
 	double change_time;
@@ -113,7 +115,7 @@ public:
 	double idle_time_wi;
 };
 
-Device server[NUM_CPUs +1]; //add 1 for the disk
+Device server[NUM_Disks+NUM_CPUs]; //add 1 for the disk
 
 class Barrier_Queue{
 public:
@@ -129,6 +131,7 @@ int inmemory=0;
 int finished_tasks=0;
 int MPL=MS;
 int N=NS; /* inmemory, actual number of tasks in memory ****/
+int TotQueues = 2 + NUM_Disks;
 
 int finished_parallel_tasks = 0;
 
@@ -137,14 +140,15 @@ double sum_response_time=0.0;
 double TTotal=TTS;
 double memory_allocated=0.0;
 double TIP = 0;
+int next_disk = 2; 
 void Process_RequestMemory(int, double), Process_RequestCPU(int, double),   /****  Event procedures      ****/
     Process_ReleaseCPU(int, double), Process_RequestDisk(int, double), Process_ReleaseDisk(int, double);   
 double erand48(unsigned short xsubi[3]), random_exponential(double);                         /****  Auxiliary functions   ****/
 void place_in_queue(int, double, int), create_event(int, int, double, int), init(), 
     stats();
 
-//debug
 int barrier_times = 0;
+//debug
 int adding_to_barrier = 0;
 
 //gets inter page fault time 
@@ -163,8 +167,7 @@ double inter_page_fault_time(){
 
 bool CPUs_busy(){
     bool busy = true;
-    //start at 1 to avoid disk
-    for(int c = 1; c < NUM_CPUs+1; c++){
+    for(int c = NUM_Disks; c < NUM_CPUs+NUM_Disks; c++){
 	if (server[c].busy == 0){
 	    busy = false;
 	}
@@ -173,13 +176,47 @@ bool CPUs_busy(){
 }
 
 int free_CPU(){
-    //start at 1 to avoid disk
-    for(int c = 1; c < NUM_CPUs+1; c++){
+    for(int c = NUM_Disks; c < NUM_CPUs+NUM_Disks; c++){
 	if(server[c].busy == 0){
 	    return c;
 	}
     }
     return -1;
+}
+
+bool disks_busy(){
+    bool busy = true;
+
+    for(int d = 0; d < NUM_Disks; d++){
+	if(server[d].busy == 0){
+	    busy = false;
+	}
+    }
+    return busy;
+}
+
+int free_Disk(){
+    for(int d = 0; d < NUM_Disks; d++){
+	if(server[d].busy == 0){
+	    return d;
+	}
+    }
+    return -1;
+}
+
+void increment_disk(){
+    next_disk = (next_disk + 1)%NUM_Disks + 2;
+}
+
+bool disk_queues_empty(){
+    bool empty = true;
+
+    for(int d = 0; d < NUM_Disks; d++){
+	if(queue[d+2].q_length != 0){
+	    empty = false;
+	}
+    }
+    return empty;
 }
 
 //int = queue #, double = time of removal.  Note: this is pop_front();
@@ -261,7 +298,7 @@ void Process_RequestCPU(int process, double time)
     else {
 	int CPU = free_CPU();
 	if(server[CPU].busy == 0){
-	    if(queue[DiskQueue].q_length == 0) {
+	    if(disk_queues_empty()) {
 		server[CPU].idle_time_wi+=time - max(server[CPU].change_time, server[CPU].queue_change_time);
 	    }
 	    else
@@ -393,18 +430,21 @@ void Process_ReleaseCPU(int process, double time){
 void Process_RequestDisk(int process, double time)
 {
     /**** If Disk busy go to Disk queue, if not create Process_ReleaseDisk event    ****/
-    if (server[DISK].busy) {
-	if(queue[DiskQueue].q_length == 0) {
-	    for(int c = 1; c < NUM_CPUs+1; c++){
+    if (disks_busy()) {
+	if(disk_queues_empty()) {
+	    for(int c = NUM_Disks; c < NUM_CPUs+NUM_Disks; c++){
 		if(server[c].busy == 0){
 		    server[c].idle_time_wi+=time - max(server[c].change_time, server[c].queue_change_time);
 		    server[c].queue_change_time = time;
 		}
 	    }
 	}
-	place_in_queue(process,time,DiskQueue);
+	place_in_queue(process,time,next_disk);
+	increment_disk();
     }
     else {
+	int DISK = free_Disk();
+	task[process].disk_number = DISK;
 	server[DISK].busy=1;
 	server[DISK].change_time=time;
 	create_event(process, ReleaseDisk, time+random_exponential(TDiskService), LowPriority);
@@ -414,20 +454,22 @@ void Process_RequestDisk(int process, double time)
 void Process_ReleaseDisk(int process, double time)
 {
     int queue_head;
+    int DISK = task[process].disk_number;
     /**** Update statistics for Disk and create Process_RequestCPU event         ****/
     server[DISK].busy=0;
     server[DISK].tser+=(time-server[DISK].change_time);
-    queue_head=remove_from_queue(DiskQueue, time);
-    if(queue[DiskQueue].q_length > 0){
-	for(int c = 1; c < NUM_CPUs+1; c++){
-	    if(server[c].busy == 0) {
-		server[c].idle_time_wd+=time - max(server[c].change_time, server[c].queue_change_time);
-		server[c].queue_change_time = time;
+    queue_head=remove_from_queue(DISK+2, time);
+    if (queue_head!=EMPTY) {
+	create_event(queue_head, RequestDisk, time, HighPriority);
+	if(disk_queues_empty()){
+	    for(int c = NUM_Disks; c < NUM_CPUs+NUM_Disks; c++){
+		if(server[c].busy == 0) {
+		    server[c].idle_time_wd+=time - max(server[c].change_time, server[c].queue_change_time);
+		    server[c].queue_change_time = time;
+		}
 	    }
 	}
     }
-    if (queue_head!=EMPTY) 
-	create_event(queue_head, RequestDisk, time, HighPriority);
     create_event(process, RequestCPU, time, LowPriority);
 }
 
@@ -512,7 +554,7 @@ void init()
 	queue[i].waiting_time=queue[i].ts=0.0;
 	queue[i].change_time=0;
     }
-    for(i=0;i<1+NUM_CPUs;i++) {
+    for(i=0;i<NUM_Disks + NUM_CPUs;i++) {
 	server[i].busy=0;
 	server[i].change_time=server[i].tser=0.0;
 	server[i].num_context_switches = 0;
@@ -607,29 +649,47 @@ void stats()
     cout << "CPUavg" <<  " Ucpu " << Ucpu_avg << " Ucpu-wi  " << Ucpu_wi_avg << " Ucpu-wd " << Ucpu_wd_avg << " Ucpups " << Ucpu_ps_avg << endl;
 
     //for the single disk
-    cout << "disk  0      utilization " << 100.0*server[DISK].tser/TTotal << endl;
-    cout << "disk average utilization " << 100.0*server[DISK].tser/TTotal << endl;
+    double disk_average;
+    for(int d = 0; d < NUM_Disks; d++) {
+	cout << "disk "<< d << " utilization " << 100.0*server[d].tser/TTotal << endl;
+	disk_average += 100.0*server[d].tser/TTotal;
+    }
+    cout << "disk average utilization " << disk_average/NUM_Disks << endl;
 
     /**** Print statistics                                             ****/
     //old code
     //printf("utilizations are: CPU %5.2f Disk %5.2f\n", 100.0*server[0].tser/TTotal, 100.0*server[1].tser/TTotal);
+    for(int d = 0; d < NUM_Disks; d++) {
+	double qDisk_mean_time = queue[d+2].waiting_time?queue[d+2].waiting_time/(queue[d+2].n-queue[d+2].q_length):0.0;
+	cout << "mean waiting time in qDisk " << d << " " << qDisk_mean_time << endl;
+    }
+
+
     double qe_mean = queue[MemoryQueue].waiting_time?queue[MemoryQueue].waiting_time/(queue[MemoryQueue].n-queue[MemoryQueue].q_length):0.0;
     double qCPU_mean = queue[CPUQueue].waiting_time?queue[CPUQueue].waiting_time/(queue[CPUQueue].n-queue[CPUQueue].q_length):0.0;
-    double qDisk_mean = queue[DiskQueue].waiting_time?queue[DiskQueue].waiting_time/(queue[DiskQueue].n-queue[DiskQueue].q_length):0.0;
 
-    cout << "mean waiting time in qe "<< qe_mean << " qCPU "<< qCPU_mean << " qDisk " << qDisk_mean 
-	 << " barrier " << barrier_synch_queue.ts/(barrier_times*Num_Parallel) << " total barrier wait " << barrier_synch_queue.ts/(barrier_times) <<endl;
-    cout<<"barrier ts: "<<barrier_synch_queue.ts<<endl;
-    cout<<"number of barrier fills: "<<barrier_times<<endl;
+    cout << "mean waiting time in qe "<< qe_mean << " qCPU "<< qCPU_mean << " barrier " << barrier_synch_queue.ts/(barrier_times*Num_Parallel)
+	 << " total barrier wait " << barrier_synch_queue.ts/(barrier_times) <<endl;
+    
+    cout <<"barrier ts: "<<barrier_synch_queue.ts<<endl;
+    cout <<"number of barrier fills: "<<barrier_times<<endl;
 
-	printf("mean queue length in qe %5.2f qCPU %5.2f qDisk %5.2f\n", 
-		queue[MemoryQueue].change_time?queue[MemoryQueue].ts/queue[MemoryQueue].change_time:0.0,
-		queue[CPUQueue].change_time?queue[CPUQueue].ts/queue[CPUQueue].change_time:0.0, 
-		queue[DiskQueue].change_time?queue[DiskQueue].ts/queue[DiskQueue].change_time:0.0);
-	printf("number of visits in qe  %5d qCPU %5d qDisk %5d\n", 
-		queue[MemoryQueue].n-queue[MemoryQueue].q_length,
-		queue[CPUQueue].n-queue[CPUQueue].q_length, 
-		queue[DiskQueue].n-queue[DiskQueue].q_length);
+    for(int d = 0; d < NUM_Disks; d++) {
+	double qDisk_mean_length = queue[d+2].change_time?queue[d+2].ts/queue[d+2].change_time:0.0;
+	cout << "mean queue length in qDisk " << d << " " << qDisk_mean_length << endl;
+    }
+
+	printf("mean queue length in qe %5.2f qCPU %5.2f \n", 
+	       queue[MemoryQueue].change_time?queue[MemoryQueue].ts/queue[MemoryQueue].change_time:0.0,
+	       queue[CPUQueue].change_time?queue[CPUQueue].ts/queue[CPUQueue].change_time:0.0);
+
+	for(int d = 0; d < NUM_Disks; d++) {
+	    cout << "number of visits in qDisk " << d << " " << queue[d+2].n-queue[d+2].q_length << endl;
+	}
+
+	printf("number of visits in qe  %5d qCPU %5d \n", 
+	       queue[MemoryQueue].n-queue[MemoryQueue].q_length,
+	       queue[CPUQueue].n-queue[CPUQueue].q_length);
 	cout << "average response time " << sum_response_time/finished_tasks <<  " processes finished " 
 	     << finished_tasks << " parallel tasks finished " << finished_parallel_tasks << endl;
 
