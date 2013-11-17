@@ -18,8 +18,8 @@
 #define TTS 1000000
 #define FreeSystemMemory 7680
 /*#define TCPU 40 These are now global variables based on MissRate
-#define BarrierTime 400
-#define TInterRequest 16*/ //this is the i/o request time
+  #define BarrierTime 400
+  #define TInterRequest 16*/ //this is the i/o request time
 
 //Parameters given in the lecture slide
 #define context_switch_time 0.5 //context switching times
@@ -68,7 +68,7 @@ public:
 	double tquantum;
 	//added doubles for page fault and i/o
 	double t_page_fault; 
-//	double t_barrier; //when parallel processes need to synch
+	//	double t_barrier; //when parallel processes need to synch
 	double tinterrequest;
 	double start; 
 	bool parallel; //is this a parallel process
@@ -76,14 +76,14 @@ public:
 	int disk_number;
 };  /**** Job list       ****/
 
-	Task task[NS];
+Task task[NS];
 
 class Events {                              /**** Event list           ****/
 public:	
 	int head;
 	int tail;
 	int q_length;
-	double time[NS]; 
+	double time[NS];
 	int task[NS], event[NS];
 };
 
@@ -152,78 +152,78 @@ int barrier_times = 0;
 int adding_to_barrier = 0;
 
 void Process_RequestMemory(int, double), Process_RequestCPU(int, double),   /****  Event procedures      ****/
-    Process_ReleaseCPU(int, double), Process_RequestDisk(int, double), Process_ReleaseDisk(int, double);   
+	Process_ReleaseCPU(int, double), Process_RequestDisk(int, double), Process_ReleaseDisk(int, double);   
 double erand48(unsigned short xsubi[3]), random_exponential(double);                         /****  Auxiliary functions   ****/
 void place_in_queue(int, double, int), create_event(int, int, double, int), init(), 
-    stats();
+	stats();
 
 
 //gets inter page fault time 
 double inter_page_fault_time(){
-    //f(m)
-    double page_fault_time = 0.0;
-    double instruction_fault_probability = pow(2,-(memory_allocated/160.0 + 17.0));
+	//f(m)
+	double page_fault_time = 0.0;
+	double instruction_fault_probability = pow(2,-(memory_allocated/160.0 + 17.0));
 
-    double average_instruction_time = ((1-MissRate) * 1 + MissRate * MissCost);
+	double average_instruction_time = ((1-MissRate) * 1 + MissRate * MissCost);
 
-    //the actual time = 1/f(m)
-    page_fault_time = (1.0/instruction_fault_probability)*average_instruction_time;
-    TIP = page_fault_time*pow(10,-6);
-    return random_exponential(TIP);
+	//the actual time = 1/f(m)
+	page_fault_time = (1.0/instruction_fault_probability)*average_instruction_time;
+	TIP = page_fault_time*pow(10,-6);
+	return random_exponential(TIP);
 }
 
 bool CPUs_busy(){
-    bool busy = true;
-    for(int c = NUM_Disks; c < NUM_CPUs+NUM_Disks; c++){
-	if (server[c].busy == 0){
-	    busy = false;
+	bool busy = true;
+	for(int c = NUM_Disks; c < NUM_CPUs+NUM_Disks; c++){
+		if (server[c].busy == 0){
+			busy = false;
+		}
 	}
-    }
-    return busy;
+	return busy;
 }
 
 int free_CPU(){
-    for(int c = NUM_Disks; c < NUM_CPUs+NUM_Disks; c++){
-	if(server[c].busy == 0){
-	    return c;
+	for(int c = NUM_Disks; c < NUM_CPUs+NUM_Disks; c++){
+		if(server[c].busy == 0){
+			return c;
+		}
 	}
-    }
-    return -1;
+	return -1;
 }
 
 bool disks_busy(){
-    bool busy = true;
+	bool busy = true;
 
-    for(int d = 0; d < NUM_Disks; d++){
-	if(server[d].busy == 0){
-	    busy = false;
+	for(int d = 0; d < NUM_Disks; d++){
+		if(server[d].busy == 0){
+			busy = false;
+		}
 	}
-    }
-    return busy;
+	return busy;
 }
 
 int free_Disk(){
-    for(int d = 0; d < NUM_Disks; d++){
-	if(server[d].busy == 0){
-	    return d;
+	for(int d = 0; d < NUM_Disks; d++){
+		if(server[d].busy == 0){
+			return d;
+		}
 	}
-    }
-    return -1;
+	return -1;
 }
 
 void increment_disk(){
-    next_disk = (next_disk + 1)%NUM_Disks + 2;
+	next_disk = (next_disk + 1)%NUM_Disks + 2;
 }
 
 bool disk_queues_empty(){
-    bool empty = true;
+	bool empty = true;
 
-    for(int d = 0; d < NUM_Disks; d++){
-	if(queue[d+2].q_length != 0){
-	    empty = false;
+	for(int d = 0; d < NUM_Disks; d++){
+		if(queue[d+2].q_length != 0){
+			empty = false;
+		}
 	}
-    }
-    return empty;
+	return empty;
 }
 
 //int = queue #, double = time of removal.  Note: this is pop_front();
@@ -240,41 +240,41 @@ double genrand_real2(void);
 /* #include "header.h"                                             **/
 int main(int argc, char *argv[])
 {
-    double global_time=0.0;
-    int process, event;
+	double global_time=0.0;
+	int process, event;
 
-    /* read in parameters */
-    if (argc>1) sscanf(argv[1], "%d", &MPL);
-    if (argc>2) sscanf(argv[2], "%d", &N);
-    if (argc>3) sscanf(argv[3], "%lf", &TTotal);
+	/* read in parameters */
+	if (argc>1) sscanf(argv[1], "%d", &MPL);
+	if (argc>2) sscanf(argv[2], "%d", &N);
+	if (argc>3) sscanf(argv[3], "%lf", &TTotal);
 
-    init();
-    /***** Main simulation loop *****/
-    while (global_time<=TTotal) {
+	init();
+	/***** Main simulation loop *****/
+	while (global_time<=TTotal) {
 
-	/***** Select the event e from the head of event list *****/
-	process=event_list.task[event_list.head];
-	//cout << "Time before change: " << global_time << endl;
-	global_time = event_list.time[event_list.head];
-	//cout << "Time after change: " << global_time << endl;
-	event = event_list.event[event_list.head];
-	event_list.head=(event_list.head+1)%(N+Num_Parallel);
-	event_list.q_length--;
-	/***** Execute the event e ******/
-	switch(event) {
-	case RequestMemory: Process_RequestMemory(process, global_time);
-	    break;
-	case RequestCPU: Process_RequestCPU(process, global_time);
-	    break;
-	case ReleaseCPU: Process_ReleaseCPU(process, global_time);
-	    break;
-	case RequestDisk: Process_RequestDisk(process, global_time);
-	    break;
-	case ReleaseDisk: Process_ReleaseDisk(process, global_time);
+		/***** Select the event e from the head of event list *****/
+		process=event_list.task[event_list.head];
+		//cout << "Time before change: " << global_time << endl;
+		global_time = event_list.time[event_list.head];
+		//cout << "Time after change: " << global_time << endl;
+		event = event_list.event[event_list.head];
+		event_list.head=(event_list.head+1)%(N+Num_Parallel);
+		event_list.q_length--;
+		/***** Execute the event e ******/
+		switch(event) {
+		case RequestMemory: Process_RequestMemory(process, global_time);
+			break;
+		case RequestCPU: Process_RequestCPU(process, global_time);
+			break;
+		case ReleaseCPU: Process_ReleaseCPU(process, global_time);
+			break;
+		case RequestDisk: Process_RequestDisk(process, global_time);
+			break;
+		case ReleaseDisk: Process_ReleaseDisk(process, global_time);
+		}
 	}
-    }
-    stats();
-    return 0;
+	stats();
+	return 0;
 }
 
 /********************************************************************/
@@ -283,201 +283,201 @@ int main(int argc, char *argv[])
 //If there is space in memory, add to memory.  Otherwise, go to the memory (eligible) queue
 void Process_RequestMemory(int process, double time)
 {
-    /**** Create a Process_RequestCPU event or place a task in memory queue      ****/
-    //cout<<"inmemory: " << inmemory << " MPL: " << MPL << endl;
-    //cout<<"parallel?: "<< task[process].parallel << endl;
-    if (inmemory<MPL) {
-	inmemory++;
-	create_event(process, RequestCPU, time, LowPriority);
-    }
-    else {
-	place_in_queue(process, time, MemoryQueue);
-	//cout<<"Something is going in the memQ"<<endl;
-    }
+	/**** Create a Process_RequestCPU event or place a task in memory queue      ****/
+	//cout<<"inmemory: " << inmemory << " MPL: " << MPL << endl;
+	//cout<<"parallel?: "<< task[process].parallel << endl;
+	if (inmemory<MPL) {
+		inmemory++;
+		create_event(process, RequestCPU, time, LowPriority);
+	}
+	else {
+		place_in_queue(process, time, MemoryQueue);
+		//cout<<"Something is going in the memQ"<<endl;
+	}
 }
 
 void Process_RequestCPU(int process, double time)
 {
-    double release_time;
+	double release_time;
 
-    /**** Place in CPU queue if server is busy                       ****/
-    if (CPUs_busy()) place_in_queue(process,time,CPUQueue);
-    else {
-	int CPU = free_CPU();
-	if(server[CPU].busy == 0){
-	    if(disk_queues_empty()) {
-		server[CPU].idle_time_wi+=time - max(server[CPU].change_time, server[CPU].queue_change_time);
-	    }
-	    else
-		server[CPU].idle_time_wd+=time - max(server[CPU].change_time, server[CPU].queue_change_time);
+	/**** Place in CPU queue if server is busy                       ****/
+	if (CPUs_busy()) place_in_queue(process,time,CPUQueue);
+	else {
+		int CPU = free_CPU();
+		if(server[CPU].busy == 0){
+			if(disk_queues_empty()) {
+				server[CPU].idle_time_wi+=time - max(server[CPU].change_time, server[CPU].queue_change_time);
+			}
+			else
+				server[CPU].idle_time_wd+=time - max(server[CPU].change_time, server[CPU].queue_change_time);
+		}
+		server[CPU].busy=1;
+		server[CPU].change_time=time;
+		task[process].CPU_number = CPU;
+		/**** Find the time of leaving CPU                               ****/
+		if (task[process].tcpu<task[process].tquantum) release_time=task[process].tcpu;
+		else release_time=task[process].tquantum;
+		if (release_time>task[process].tinterrequest) release_time=task[process].tinterrequest;
+		if (release_time>task[process].t_page_fault) release_time=task[process].t_page_fault;
+
+		/**** Update the process times and create Process_ReleaseCPU event           ****/
+		task[process].tcpu-=release_time;
+		task[process].tinterrequest-=release_time;
+		task[process].tquantum-=release_time;
+		task[process].t_page_fault-=release_time;
+		server[CPU].num_context_switches++;
+		create_event(process, ReleaseCPU, time+release_time+context_switch_time, LowPriority);
 	}
-	server[CPU].busy=1;
-	server[CPU].change_time=time;
-	task[process].CPU_number = CPU;
-	/**** Find the time of leaving CPU                               ****/
-	if (task[process].tcpu<task[process].tquantum) release_time=task[process].tcpu;
-	else release_time=task[process].tquantum;
-	if (release_time>task[process].tinterrequest) release_time=task[process].tinterrequest;
-	if (release_time>task[process].t_page_fault) release_time=task[process].t_page_fault;
-
-	/**** Update the process times and create Process_ReleaseCPU event           ****/
-	task[process].tcpu-=release_time;
-	task[process].tinterrequest-=release_time;
-	task[process].tquantum-=release_time;
-	task[process].t_page_fault-=release_time;
-	server[CPU].num_context_switches++;
-	create_event(process, ReleaseCPU, time+release_time+context_switch_time, LowPriority);
-    }
 }
 
 void Process_ReleaseCPU(int process, double time){
     
-    int queue_head;
+	int queue_head;
 
-    int CPU = task[process].CPU_number;
-    /**** Update CPU statistics                                            ****/
-    server[CPU].busy=0;
-    server[CPU].tser+=(time-server[CPU].change_time);
-    server[CPU].change_time = time;
-    queue_head=remove_from_queue(CPUQueue, time);           /* remove head of CPU queue ****/
-    if (queue_head!=EMPTY) create_event(queue_head, RequestCPU, time, HighPriority);
-    /**** Depending on reason for leaving CPU, select the next event       ****/
-    if(task[process].t_page_fault <=  0){
-	//cout<<"page fault"<<endl;
-	task[process].t_page_fault = inter_page_fault_time();
-	create_event(process, RequestDisk, time, LowPriority);		
-    }
-    //this is the same for both parallel + interactive
-    //both go back in the CPU queue
-    else if(task[process].tinterrequest <= 0){
-	//cout<<"disk request"<<endl;
-	task[process].tinterrequest=random_exponential(TInterRequest);
-	create_event(process, RequestDisk, time, LowPriority);	
-    }
-    else if (task[process].tcpu <= 0) {             /* task termination         ****/
-	if(task[process].parallel == true){
-	    //cout<<"tcpu, parallel"<<endl;
-	    //the process needs to go to the barrier synchronization queue
-	    task[process].tcpu=random_exponential(BarrierTime);
-	    task[process].tinterrequest = random_exponential(TInterRequest);
-	    task[process].t_page_fault = inter_page_fault_time();
-	    task[process].tquantum  =   TQuantum;
-	    //update ts
+	int CPU = task[process].CPU_number;
+	/**** Update CPU statistics                                            ****/
+	server[CPU].busy=0;
+	server[CPU].tser+=(time-server[CPU].change_time);
+	server[CPU].change_time = time;
+	queue_head=remove_from_queue(CPUQueue, time);           /* remove head of CPU queue ****/
+	if (queue_head!=EMPTY) create_event(queue_head, RequestCPU, time, HighPriority);
+	/**** Depending on reason for leaving CPU, select the next event       ****/
+	if(task[process].t_page_fault <=  0){
+		//cout<<"page fault"<<endl;
+		task[process].t_page_fault = inter_page_fault_time();
+		create_event(process, RequestDisk, time, LowPriority);		
+	}
+	//this is the same for both parallel + interactive
+	//both go back in the CPU queue
+	else if(task[process].tinterrequest <= 0){
+		//cout<<"disk request"<<endl;
+		task[process].tinterrequest=random_exponential(TInterRequest);
+		create_event(process, RequestDisk, time, LowPriority);	
+	}
+	else if (task[process].tcpu <= 0) {             /* task termination         ****/
+		if(task[process].parallel == true){
+			//cout<<"tcpu, parallel"<<endl;
+			//the process needs to go to the barrier synchronization queue
+			task[process].tcpu=random_exponential(BarrierTime);
+			task[process].tinterrequest = random_exponential(TInterRequest);
+			task[process].t_page_fault = inter_page_fault_time();
+			task[process].tquantum  =   TQuantum;
+			//update ts
 
-	    //cout << "Barrier Queue Size: " << barrier_synch_queue.waiting_processes.size() << " and global time: " << time << endl;
-	    barrier_synch_queue.ts+=(time-barrier_synch_queue.change_time)*barrier_synch_queue.waiting_processes.size();
-	    barrier_synch_queue.waiting_processes.push_back(process);
-	    //change time after ts calculation
-	    barrier_synch_queue.change_time = time;
-	    finished_parallel_tasks++;
+			//cout << "Barrier Queue Size: " << barrier_synch_queue.waiting_processes.size() << " and global time: " << time << endl;
+			barrier_synch_queue.ts+=(time-barrier_synch_queue.change_time)*barrier_synch_queue.waiting_processes.size();
+			barrier_synch_queue.waiting_processes.push_back(process);
+			//change time after ts calculation
+			barrier_synch_queue.change_time = time;
+			finished_parallel_tasks++;
 
-	    if (barrier_synch_queue.waiting_processes.size() >= Num_Parallel) {
-		//don't have to update ts because we just did when the 6th one was added
-		for(list<int>::iterator b = barrier_synch_queue.waiting_processes.begin();
-		    b != barrier_synch_queue.waiting_processes.end(); b++ ) {
-		    create_event(*b, RequestCPU, time, LowPriority);
+			if (barrier_synch_queue.waiting_processes.size() >= Num_Parallel) {
+				//don't have to update ts because we just did when the 6th one was added
+				for(list<int>::iterator b = barrier_synch_queue.waiting_processes.begin();
+				    b != barrier_synch_queue.waiting_processes.end(); b++ ) {
+					create_event(*b, RequestCPU, time, LowPriority);
+				}
+				barrier_synch_queue.waiting_processes.clear();
+				barrier_times++;
+			}
+
 		}
-		barrier_synch_queue.waiting_processes.clear();
-		barrier_times++;
-	    }
-
+		//interactive processes:  need to make a new process at the monitor
+		else{
+			//cout<<"tcpu, interactive"<<endl;
+			task[process].tcpu=random_exponential(TCPU);
+			sum_response_time+=time-task[process].start;
+			finished_tasks++;
+			/**** Create a new task                                          ****/
+			task[process].tquantum  =   TQuantum;
+			task[process].tinterrequest = random_exponential(TInterRequest);
+			task[process].start=time+random_exponential(TThink);
+			task[process].t_page_fault = inter_page_fault_time();
+			create_event(process, RequestMemory, task[process].start, LowPriority);
+			inmemory--;
+			queue_head=remove_from_queue(MemoryQueue, time);
+			if (queue_head!=EMPTY) create_event(queue_head, RequestMemory, time, HighPriority);
+		}
 	}
-	//interactive processes:  need to make a new process at the monitor
-	else{
-	    //cout<<"tcpu, interactive"<<endl;
-	    task[process].tcpu=random_exponential(TCPU);
-	    sum_response_time+=time-task[process].start;
-	    finished_tasks++;
-	    /**** Create a new task                                          ****/
-	    task[process].tquantum  =   TQuantum;
-	    task[process].tinterrequest = random_exponential(TInterRequest);
-	    task[process].start=time+random_exponential(TThink);
-	    task[process].t_page_fault = inter_page_fault_time();
-	    create_event(process, RequestMemory, task[process].start, LowPriority);
-	    inmemory--;
-	    queue_head=remove_from_queue(MemoryQueue, time);
-	    if (queue_head!=EMPTY) create_event(queue_head, RequestMemory, time, HighPriority);
+	else if (task[process].tquantum <= 0) {          /* time slice interrupt     ****/
+
+		task[process].tquantum=TQuantum;
+		//parallel processes only
+		if(task[process].parallel == true){
+			//cout<<"time quantum parallel"<<endl;
+			create_event(process, RequestCPU, time, LowPriority);
+		}
+		//interactive processes only
+		else{
+
+			inmemory--; //we just removed a process from memory
+			//cout<<"time quantum interactive"<<endl;
+			//first check the memory queue and put the first item into the CPU
+			queue_head = remove_from_queue(MemoryQueue, time);
+
+			//this means we got a process form the queue
+			if(queue_head != EMPTY){
+				//put this process in CPU
+				//inmemory++; //adding a process to the CPU queue
+				create_event(queue_head, RequestMemory, time, HighPriority);
+
+
+			}
+			//either way, first process needs to request memory again
+			create_event(process, RequestMemory, time, LowPriority);
+
+			//this was in the code, but it's not what the assignment asks for
+			//task[process].tquantum=TQuantum;
+			//create_event(process, RequestCPU, time, LowPriority);
+
+		}
 	}
-    }
-    else if (task[process].tquantum <= 0) {          /* time slice interrupt     ****/
-
-	task[process].tquantum=TQuantum;
-	//parallel processes only
-	if(task[process].parallel == true){
-	    //cout<<"time quantum parallel"<<endl;
-	    create_event(process, RequestCPU, time, LowPriority);
-	}
-	//interactive processes only
-	else{
-
-	    inmemory--; //we just removed a process from memory
-	    //cout<<"time quantum interactive"<<endl;
-	    //first check the memory queue and put the first item into the CPU
-	    queue_head = remove_from_queue(MemoryQueue, time);
-
-	    //this means we got a process form the queue
-	    if(queue_head != EMPTY){
-		//put this process in CPU
-		//inmemory++; //adding a process to the CPU queue
-		create_event(queue_head, RequestMemory, time, HighPriority);
-
-
-	    }
-	    //either way, first process needs to request memory again
-	    create_event(process, RequestMemory, time, LowPriority);
-
-	    //this was in the code, but it's not what the assignment asks for
-	    //task[process].tquantum=TQuantum;
-	    //create_event(process, RequestCPU, time, LowPriority);
-
-	}
-    }
 }
 
 void Process_RequestDisk(int process, double time)
 {
-    /**** If Disk busy go to Disk queue, if not create Process_ReleaseDisk event    ****/
-    if (disks_busy()) {
-	if(disk_queues_empty()) {
-	    for(int c = NUM_Disks; c < NUM_CPUs+NUM_Disks; c++){
-		if(server[c].busy == 0){
-		    server[c].idle_time_wi+=time - max(server[c].change_time, server[c].queue_change_time);
-		    server[c].queue_change_time = time;
+	/**** If Disk busy go to Disk queue, if not create Process_ReleaseDisk event    ****/
+	if (disks_busy()) {
+		if(disk_queues_empty()) {
+			for(int c = NUM_Disks; c < NUM_CPUs+NUM_Disks; c++){
+				if(server[c].busy == 0){
+					server[c].idle_time_wi+=time - max(server[c].change_time, server[c].queue_change_time);
+					server[c].queue_change_time = time;
+				}
+			}
 		}
-	    }
+		place_in_queue(process,time,next_disk);
+		increment_disk();
 	}
-	place_in_queue(process,time,next_disk);
-	increment_disk();
-    }
-    else {
-	int DISK = free_Disk();
-	task[process].disk_number = DISK;
-	server[DISK].busy=1;
-	server[DISK].change_time=time;
-	create_event(process, ReleaseDisk, time+random_exponential(TDiskService), LowPriority);
-    }
+	else {
+		int DISK = free_Disk();
+		task[process].disk_number = DISK;
+		server[DISK].busy=1;
+		server[DISK].change_time=time;
+		create_event(process, ReleaseDisk, time+random_exponential(TDiskService), LowPriority);
+	}
 }
 
 void Process_ReleaseDisk(int process, double time)
 {
-    int queue_head;
-    int DISK = task[process].disk_number;
-    /**** Update statistics for Disk and create Process_RequestCPU event         ****/
-    server[DISK].busy=0;
-    server[DISK].tser+=(time-server[DISK].change_time);
-    queue_head=remove_from_queue(DISK+2, time);
-    if (queue_head!=EMPTY) {
-	create_event(queue_head, RequestDisk, time, HighPriority);
-	if(disk_queues_empty()){
-	    for(int c = NUM_Disks; c < NUM_CPUs+NUM_Disks; c++){
-		if(server[c].busy == 0) {
-		    server[c].idle_time_wd+=time - max(server[c].change_time, server[c].queue_change_time);
-		    server[c].queue_change_time = time;
+	int queue_head;
+	int DISK = task[process].disk_number;
+	/**** Update statistics for Disk and create Process_RequestCPU event         ****/
+	server[DISK].busy=0;
+	server[DISK].tser+=(time-server[DISK].change_time);
+	queue_head=remove_from_queue(DISK+2, time);
+	if (queue_head!=EMPTY) {
+		create_event(queue_head, RequestDisk, time, HighPriority);
+		if(disk_queues_empty()){
+			for(int c = NUM_Disks; c < NUM_CPUs+NUM_Disks; c++){
+				if(server[c].busy == 0) {
+					server[c].idle_time_wd+=time - max(server[c].change_time, server[c].queue_change_time);
+					server[c].queue_change_time = time;
+				}
+			}
 		}
-	    }
 	}
-    }
-    create_event(process, RequestCPU, time, LowPriority);
+	create_event(process, RequestCPU, time, LowPriority);
 }
 
 /********************************************************************/
@@ -486,212 +486,212 @@ void Process_ReleaseDisk(int process, double time)
 
 int remove_from_queue(int current_queue, double time)
 {
-    int process;
+	int process;
 
-    /**** If queue not empty, remove the head of the queue              ****/
-    /*if(current_queue == MemoryQueue) {
-      cout<<"Removing from memory queue, length: "<< queue[current_queue].q_length<<endl;
-      }*/
-    if (queue[current_queue].q_length>0) {
-	process=queue[current_queue].task[queue[current_queue].head];
-	/**** Update statistics for the queue                               ****/
-	queue[current_queue].waiting_time+=time-queue[current_queue].entry_times[queue[current_queue].head];
+	/**** If queue not empty, remove the head of the queue              ****/
 	/*if(current_queue == MemoryQueue) {
-	  cout<<"Queue wating time: "<<queue[current_queue].waiting_time<<endl;
+	  cout<<"Removing from memory queue, length: "<< queue[current_queue].q_length<<endl;
 	  }*/
-	queue[current_queue].ts+=(time-queue[current_queue].change_time)*queue[current_queue].q_length;
-	queue[current_queue].q_length--;
-	queue[current_queue].change_time=time;
-	/**** Create a new event for the task at the head and move the head ****/
-	queue[current_queue].head=(queue[current_queue].head+1)%(N+Num_Parallel);
-	return(process);
-    }
-    else return(EMPTY);
+	if (queue[current_queue].q_length>0) {
+		process=queue[current_queue].task[queue[current_queue].head];
+		/**** Update statistics for the queue                               ****/
+		queue[current_queue].waiting_time+=time-queue[current_queue].entry_times[queue[current_queue].head];
+		/*if(current_queue == MemoryQueue) {
+		  cout<<"Queue wating time: "<<queue[current_queue].waiting_time<<endl;
+		  }*/
+		queue[current_queue].ts+=(time-queue[current_queue].change_time)*queue[current_queue].q_length;
+		queue[current_queue].q_length--;
+		queue[current_queue].change_time=time;
+		/**** Create a new event for the task at the head and move the head ****/
+		queue[current_queue].head=(queue[current_queue].head+1)%(N+Num_Parallel);
+		return(process);
+	}
+	else return(EMPTY);
 }
 
 void place_in_queue(int process, double time, int current_queue)
 {
-    /**** Update statistics for the queue                               ****/
-    queue[current_queue].ts+=
-	(time-queue[current_queue].change_time)*queue[current_queue].q_length;
-    queue[current_queue].q_length++;
-    queue[current_queue].n++;
-    queue[current_queue].change_time=time;
-    /**** Place the process at the tail of queue and move the tail       ****/
-    queue[current_queue].task[queue[current_queue].tail]=process;
-    queue[current_queue].entry_times[queue[current_queue].tail]=time;
-    queue[current_queue].tail=(queue[current_queue].tail+1)%(N+Num_Parallel);
+	/**** Update statistics for the queue                               ****/
+	queue[current_queue].ts+=
+		(time-queue[current_queue].change_time)*queue[current_queue].q_length;
+	queue[current_queue].q_length++;
+	queue[current_queue].n++;
+	queue[current_queue].change_time=time;
+	/**** Place the process at the tail of queue and move the tail       ****/
+	queue[current_queue].task[queue[current_queue].tail]=process;
+	queue[current_queue].entry_times[queue[current_queue].tail]=time;
+	queue[current_queue].tail=(queue[current_queue].tail+1)%(N+Num_Parallel);
 }
 
 void create_event(int process, int event, double time, int priority)
 {
-    int i, notdone=1, place=event_list.tail;
+	int i, notdone=1, place=event_list.tail;
 
-    /**** Move all more futuristic tasks by one position                ****/
-    //If this were a list this wouldn't have to happen at all
-    for(i=(event_list.tail+N+Num_Parallel-1)%(N+Num_Parallel); notdone & (event_list.q_length>0); i=(i+N+Num_Parallel-1)%(N+Num_Parallel)) {
-	if ((event_list.time[i]<time) | ((priority==LowPriority) & (event_list.time[i]==time))) 
-	    notdone=0;
-	else {
-	    event_list.time[place]=event_list.time[i];
-	    event_list.task[place]=event_list.task[i];
-	    event_list.event[place]=event_list.event[i];
-	    place=i;
+	/**** Move all more futuristic tasks by one position                ****/
+	//If this were a list this wouldn't have to happen at all
+	for(i=(event_list.tail+N+Num_Parallel-1)%(N+Num_Parallel); notdone & (event_list.q_length>0); i=(i+N+Num_Parallel-1)%(N+Num_Parallel)) {
+		if ((event_list.time[i]<time) | ((priority==LowPriority) & (event_list.time[i]==time))) 
+			notdone=0;
+		else {
+			event_list.time[place]=event_list.time[i];
+			event_list.task[place]=event_list.task[i];
+			event_list.event[place]=event_list.event[i];
+			place=i;
+		}
+		if (i==event_list.head) notdone=0;
 	}
-	if (i==event_list.head) notdone=0;
-    }
-    /**** Place the argument event in the newly created space           ****/
-    event_list.time[place]=time;
-    event_list.task[place]=process;
-    event_list.event[place]=event;
-    event_list.tail=(event_list.tail+1)%(N+Num_Parallel);
-    event_list.q_length++;
+	/**** Place the argument event in the newly created space           ****/
+	event_list.time[place]=time;
+	event_list.task[place]=process;
+	event_list.event[place]=event;
+	event_list.tail=(event_list.tail+1)%(N+Num_Parallel);
+	event_list.q_length++;
 }
 
 void init()
 {
-    int i;
+	int i;
 
-    memory_allocated = FreeSystemMemory/MPL;
+	memory_allocated = FreeSystemMemory/MPL;
 
-    /**** Initialize structures                                         ****/
-    event_list.head=event_list.tail=event_list.q_length=0;
-    for(i=0;i<TotQueues;i++) {
-	queue[i].head=queue[i].tail=queue[i].q_length=queue[i].n=0;
-	queue[i].waiting_time=queue[i].ts=0.0;
-	queue[i].change_time=0;
-    }
-    for(i=0;i<NUM_Disks + NUM_CPUs;i++) {
-	server[i].busy=0;
-	server[i].change_time=server[i].tser=0.0;
-	server[i].num_context_switches = 0;
-	server[i].queue_change_time = 0;
-	server[i].idle_time_wd =0;
-	server[i].idle_time_wi = 0;
-    }
-    //initialize barrier queue
-    barrier_synch_queue.ts = 0;
-    barrier_synch_queue.change_time = 0;
-    barrier_synch_queue.waiting_processes.clear();
-
-    for(i=0;i<N+Num_Parallel;i++) {
-	/**** Create a new task                                          ****/
-
-	//all processes have this
-	task[i].tquantum  =   TQuantum;
-	task[i].tinterrequest = random_exponential(TInterRequest);
-	task[i].t_page_fault = inter_page_fault_time();
-	//cout << "Page Fault Time: " << inter_page_fault_time();
-	task[i].CPU_number = -1;
-
-	//interactive processes
-	if(i < N){
-	    task[i].parallel = false;
-	    task[i].tcpu=random_exponential(TCPU);
-	    task[i].start=random_exponential(TThink);
+	/**** Initialize structures                                         ****/
+	event_list.head=event_list.tail=event_list.q_length=0;
+	for(i=0;i<TotQueues;i++) {
+		queue[i].head=queue[i].tail=queue[i].q_length=queue[i].n=0;
+		queue[i].waiting_time=queue[i].ts=0.0;
+		queue[i].change_time=0;
 	}
-	else{ //these are parallel processes
-	    task[i].parallel = true;
-	    task[i].tcpu=random_exponential(BarrierTime);
-	    task[i].start=0;
+	for(i=0;i<NUM_Disks + NUM_CPUs;i++) {
+		server[i].busy=0;
+		server[i].change_time=server[i].tser=0.0;
+		server[i].num_context_switches = 0;
+		server[i].queue_change_time = 0;
+		server[i].idle_time_wd =0;
+		server[i].idle_time_wi = 0;
 	}
-	create_event(i, RequestMemory, task[i].start, LowPriority);
+	//initialize barrier queue
+	barrier_synch_queue.ts = 0;
+	barrier_synch_queue.change_time = 0;
+	barrier_synch_queue.waiting_processes.clear();
 
-    }
+	for(i=0;i<N+Num_Parallel;i++) {
+		/**** Create a new task                                          ****/
+
+		//all processes have this
+		task[i].tquantum  =   TQuantum;
+		task[i].tinterrequest = random_exponential(TInterRequest);
+		task[i].t_page_fault = inter_page_fault_time();
+		//cout << "Page Fault Time: " << inter_page_fault_time();
+		task[i].CPU_number = -1;
+
+		//interactive processes
+		if(i < N){
+			task[i].parallel = false;
+			task[i].tcpu=random_exponential(TCPU);
+			task[i].start=random_exponential(TThink);
+		}
+		else{ //these are parallel processes
+			task[i].parallel = true;
+			task[i].tcpu=random_exponential(BarrierTime);
+			task[i].start=0;
+		}
+		create_event(i, RequestMemory, task[i].start, LowPriority);
+
+	}
 
 }
 
 void stats()
 {
-    //maple calculations
-    double m = FreeSystemMemory/MPL;
-    double cmstart = 0.02; 
-    double cm = 0.02;
-    double cmc = 51; 
-    double amatstart = 1+cmstart*(cmc-1);
-    double amat = 1+cm*(cmc-1);
+	//maple calculations
+	double m = FreeSystemMemory/MPL;
+	double cmstart = 0.02; 
+	double cm = 0.02;
+	double cmc = 51; 
+	double amatstart = 1+cmstart*(cmc-1);
+	double amat = 1+cm*(cmc-1);
 
-    double tinterio = 0.016/amatstart*amat;
+	double tinterio = 0.016/amatstart*amat;
 
-    double tt = TThink;
-    double tinterpage = pow(0.5,(-m/160.0-17.0))*pow(10.0,(-9.0)*amat);
+	double tt = TThink;
+	double tinterpage = pow(0.5,(-m/160.0-17.0))*pow(10.0,(-9.0)*amat);
 
-    printf("System definitions: N %2d MPL %2d TTotal %6.0f\n",N, MPL, TTotal);
+	printf("System definitions: N %2d MPL %2d TTotal %6.0f\n",N, MPL, TTotal);
 
-    //total simulation stats
-    cout << "m " << m << " amat " << amat <<  " TIP " << TIP << endl; 
-
-
-    /**** Update utilizations                                          ****/
-
-    //for multiple CPUs
-    for(int CPU = 0; CPU < NUM_CPUs + 1; CPU++){
-	if (server[CPU].busy==1) server[CPU].tser+=(TTotal-server[CPU].change_time);
-    }
-    //old code
-    //if (server[CPU].busy==1) server[CPU].tser+=(TTotal-server[CPU].change_time);
-    //if (server[DISK].busy==1) server[DISK].tser+=(TTotal-server[DISK].change_time);
-
-    //doubles for calculating average
-    double Ucpu_avg = 0.0;
-    double Ucpu_wi_avg = 0.0;
-    double Ucpu_wd_avg = 0.0;
-    double Ucpu_ps_avg = 0.0;
-    //CPUs
-    for(int CPU = 1; CPU < NUM_CPUs+1; CPU++){
-	double pups = 100.0*((double)server[CPU].tser - ((double)server[CPU].num_context_switches*(double)context_switch_time))/(double)TTotal;
-	double wi = 100.0*server[CPU].idle_time_wi/TTotal;
-	double wd = 100.0*server[CPU].idle_time_wd/TTotal;
-	cout << "CPU  " << CPU <<  " Ucpu " << 100.0*server[CPU].tser/TTotal << " Ucpu-wi  " << wi << " Ucpu-wd " << wd << " Ucpups " << pups << endl;
-	//get the sum of the doubles above
-	Ucpu_avg += (100.0*server[CPU].tser/TTotal);
-	Ucpu_ps_avg += pups;
-	Ucpu_wi_avg += wi;
-	Ucpu_wd_avg += wd;
-    }
-    Ucpu_avg /= NUM_CPUs;
-    Ucpu_wi_avg /= NUM_CPUs;
-    Ucpu_wd_avg /= NUM_CPUs;
-    Ucpu_ps_avg /= NUM_CPUs;
-    cout << "CPUavg" <<  " Ucpu " << Ucpu_avg << " Ucpu-wi  " << Ucpu_wi_avg << " Ucpu-wd " << Ucpu_wd_avg << " Ucpups " << Ucpu_ps_avg << endl;
-
-    //for the single disk
-    double disk_average;
-    for(int d = 0; d < NUM_Disks; d++) {
-	cout << "disk "<< d << " utilization " << 100.0*server[d].tser/TTotal << endl;
-	disk_average += 100.0*server[d].tser/TTotal;
-    }
-    cout << "disk average utilization " << disk_average/NUM_Disks << endl;
-
-    /**** Print statistics                                             ****/
-    //old code
-    //printf("utilizations are: CPU %5.2f Disk %5.2f\n", 100.0*server[0].tser/TTotal, 100.0*server[1].tser/TTotal);
-    for(int d = 0; d < NUM_Disks; d++) {
-	double qDisk_mean_time = queue[d+2].waiting_time?queue[d+2].waiting_time/(queue[d+2].n-queue[d+2].q_length):0.0;
-	cout << "mean waiting time in qDisk " << d << " " << qDisk_mean_time << endl;
-    }
+	//total simulation stats
+	cout << "m " << m << " amat " << amat <<  " TIP " << TIP << endl; 
 
 
-    double qe_mean = queue[MemoryQueue].waiting_time?queue[MemoryQueue].waiting_time/(queue[MemoryQueue].n-queue[MemoryQueue].q_length):0.0;
-    double qCPU_mean = queue[CPUQueue].waiting_time?queue[CPUQueue].waiting_time/(queue[CPUQueue].n-queue[CPUQueue].q_length):0.0;
+	/**** Update utilizations                                          ****/
 
-    cout << "mean waiting time in qe "<< qe_mean << " qCPU "<< qCPU_mean << " barrier " << barrier_synch_queue.ts/(barrier_times*Num_Parallel)
-	 << " total barrier wait " << barrier_synch_queue.ts/(barrier_times) <<endl;
+	//for multiple CPUs
+	for(int CPU = 0; CPU < NUM_CPUs + 1; CPU++){
+		if (server[CPU].busy==1) server[CPU].tser+=(TTotal-server[CPU].change_time);
+	}
+	//old code
+	//if (server[CPU].busy==1) server[CPU].tser+=(TTotal-server[CPU].change_time);
+	//if (server[DISK].busy==1) server[DISK].tser+=(TTotal-server[DISK].change_time);
+
+	//doubles for calculating average
+	double Ucpu_avg = 0.0;
+	double Ucpu_wi_avg = 0.0;
+	double Ucpu_wd_avg = 0.0;
+	double Ucpu_ps_avg = 0.0;
+	//CPUs
+	for(int CPU = 1; CPU < NUM_CPUs+1; CPU++){
+		double pups = 100.0*((double)server[CPU].tser - ((double)server[CPU].num_context_switches*(double)context_switch_time))/(double)TTotal;
+		double wi = 100.0*server[CPU].idle_time_wi/TTotal;
+		double wd = 100.0*server[CPU].idle_time_wd/TTotal;
+		cout << "CPU  " << CPU <<  " Ucpu " << 100.0*server[CPU].tser/TTotal << " Ucpu-wi  " << wi << " Ucpu-wd " << wd << " Ucpups " << pups << endl;
+		//get the sum of the doubles above
+		Ucpu_avg += (100.0*server[CPU].tser/TTotal);
+		Ucpu_ps_avg += pups;
+		Ucpu_wi_avg += wi;
+		Ucpu_wd_avg += wd;
+	}
+	Ucpu_avg /= NUM_CPUs;
+	Ucpu_wi_avg /= NUM_CPUs;
+	Ucpu_wd_avg /= NUM_CPUs;
+	Ucpu_ps_avg /= NUM_CPUs;
+	cout << "CPUavg" <<  " Ucpu " << Ucpu_avg << " Ucpu-wi  " << Ucpu_wi_avg << " Ucpu-wd " << Ucpu_wd_avg << " Ucpups " << Ucpu_ps_avg << endl;
+
+	//for the single disk
+	double disk_average;
+	for(int d = 0; d < NUM_Disks; d++) {
+		cout << "disk "<< d << " utilization " << 100.0*server[d].tser/TTotal << endl;
+		disk_average += 100.0*server[d].tser/TTotal;
+	}
+	cout << "disk average utilization " << disk_average/NUM_Disks << endl;
+
+	/**** Print statistics                                             ****/
+	//old code
+	//printf("utilizations are: CPU %5.2f Disk %5.2f\n", 100.0*server[0].tser/TTotal, 100.0*server[1].tser/TTotal);
+	for(int d = 0; d < NUM_Disks; d++) {
+		double qDisk_mean_time = queue[d+2].waiting_time?queue[d+2].waiting_time/(queue[d+2].n-queue[d+2].q_length):0.0;
+		cout << "mean waiting time in qDisk " << d << " " << qDisk_mean_time << endl;
+	}
+
+
+	double qe_mean = queue[MemoryQueue].waiting_time?queue[MemoryQueue].waiting_time/(queue[MemoryQueue].n-queue[MemoryQueue].q_length):0.0;
+	double qCPU_mean = queue[CPUQueue].waiting_time?queue[CPUQueue].waiting_time/(queue[CPUQueue].n-queue[CPUQueue].q_length):0.0;
+
+	cout << "mean waiting time in qe "<< qe_mean << " qCPU "<< qCPU_mean << " barrier " << barrier_synch_queue.ts/(barrier_times*Num_Parallel)
+	     << " total barrier wait " << barrier_synch_queue.ts/(barrier_times) <<endl;
     
-    cout <<"barrier ts: "<<barrier_synch_queue.ts<<endl;
-    cout <<"number of barrier fills: "<<barrier_times<<endl;
+	cout <<"barrier ts: "<<barrier_synch_queue.ts<<endl;
+	cout <<"number of barrier fills: "<<barrier_times<<endl;
 
-    for(int d = 0; d < NUM_Disks; d++) {
-	double qDisk_mean_length = queue[d+2].change_time?queue[d+2].ts/queue[d+2].change_time:0.0;
-	cout << "mean queue length in qDisk " << d << " " << qDisk_mean_length << endl;
-    }
+	for(int d = 0; d < NUM_Disks; d++) {
+		double qDisk_mean_length = queue[d+2].change_time?queue[d+2].ts/queue[d+2].change_time:0.0;
+		cout << "mean queue length in qDisk " << d << " " << qDisk_mean_length << endl;
+	}
 
 	printf("mean queue length in qe %5.2f qCPU %5.2f \n", 
 	       queue[MemoryQueue].change_time?queue[MemoryQueue].ts/queue[MemoryQueue].change_time:0.0,
 	       queue[CPUQueue].change_time?queue[CPUQueue].ts/queue[CPUQueue].change_time:0.0);
 
 	for(int d = 0; d < NUM_Disks; d++) {
-	    cout << "number of visits in qDisk " << d << " " << queue[d+2].n-queue[d+2].q_length << endl;
+		cout << "number of visits in qDisk " << d << " " << queue[d+2].n-queue[d+2].q_length << endl;
 	}
 
 	printf("number of visits in qe  %5d qCPU %5d \n", 
