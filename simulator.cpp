@@ -136,10 +136,13 @@ int TotQueues = 2 + NUM_Disks;
 int finished_parallel_tasks = 0;
 
 double TCPU = 20*(MissRate*50 + 1);
-double BarrierTime = 1000*(MissRate*50 + 1); //This is calculated assuming the original tbs was 2sec, needs to
-                                             //be changed for simulation with tbs = .4 sec
-bool PythonPrint = false;
 double TInterRequest = 8*(MissRate*50 + 1);
+
+//This is calculated assuming the original tbs was 2sec, needs to
+//be changed for simulation with tbs = .4 sec
+double BarrierTime = 1000*(MissRate*50 + 1); 
+
+bool PythonPrint = false;
 
 double diskqs_change_time = 0;
 double CPUq_change_time = 0;
