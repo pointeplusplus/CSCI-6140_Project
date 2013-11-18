@@ -54,7 +54,7 @@
 #include <assert.h>
 #include <iostream>
 #include <algorithm>
-
+#include <vector>
 using namespace std;
 
 /* for random number generator */
@@ -138,6 +138,7 @@ int finished_parallel_tasks = 0;
 double TCPU = 20*(MissRate*50 + 1);
 double BarrierTime = 1000*(MissRate*50 + 1); //This is calculated assuming the original tbs was 2sec, needs to
                                              //be changed for simulation with tbs = .4 sec
+bool PythonPrint = false;
 double TInterRequest = 8*(MissRate*50 + 1);
 
 double diskqs_change_time = 0;
@@ -252,6 +253,11 @@ int main(int argc, char *argv[])
 	if (argc>1) sscanf(argv[1], "%d", &MPL);
 	if (argc>2) sscanf(argv[2], "%d", &N);
 	if (argc>3) sscanf(argv[3], "%lf", &TTotal);
+
+	//if there is ANY forth argument, we are printing for the python script
+	if(argc>4){
+		PythonPrint = true;
+	}
 
 	init();
 	/***** Main simulation loop *****/
@@ -636,6 +642,36 @@ void Process_ReleaseDisk(int process, double time)
 
 	void stats()
 	{
+		//if we are printing for python, we want to print these things, then return
+		if(PythonPrint){
+			//doubles for calculating average
+			double Ucpu_avg = 0.0;
+			double Ucpu_wi_avg = 0.0;
+			double Ucpu_wd_avg = 0.0;
+			double Ucpu_ps_avg = 0.0;
+			vector<double> pup_holder;
+			for(int CPU = 1; CPU < NUM_CPUs+1; CPU++){
+			double pups = 100.0*((double)server[CPU].tser - ((double)server[CPU].num_context_switches*(double)context_switch_time))/(double)TTotal;
+			double wi = 100.0*server[CPU].idle_time_wi/TTotal;
+			double wd = 100.0*server[CPU].idle_time_wd/TTotal;
+			pup_holder.push_back(pups);
+			//get the sum of the doubles above
+			Ucpu_avg += (100.0*server[CPU].tser/TTotal);
+			Ucpu_ps_avg += pups;
+			Ucpu_wi_avg += wi;
+			Ucpu_wd_avg += wd;
+			}
+			Ucpu_avg /= NUM_CPUs;
+			Ucpu_wi_avg /= NUM_CPUs;
+			Ucpu_wd_avg /= NUM_CPUs;
+			Ucpu_ps_avg /= NUM_CPUs;
+			for (int p = 0; p < pup_holder.size(); p++){
+				cout << pup_holder[p] << " " ;
+			}
+			double te =  queue[MemoryQueue].waiting_time?queue[MemoryQueue].waiting_time/(queue[MemoryQueue].n-queue[MemoryQueue].q_length):0.0;
+			cout << Ucpu_ps_avg << " " << Ucpu_wi_avg << " " << Ucpu_wd_avg << " " << te << endl;
+			return;
+		}
 		//maple calculations
 		double m = FreeSystemMemory/MPL;
 		double cmstart = 0.02; 
