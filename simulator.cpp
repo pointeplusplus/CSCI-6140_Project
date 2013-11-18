@@ -74,6 +74,7 @@ public:
 	bool parallel; //is this a parallel process
 	int CPU_number;
 	int disk_number;
+	bool urgent;
 };  /**** Job list       ****/
 
 Task task[NS];
@@ -151,6 +152,9 @@ int next_disk = 2;
 int barrier_times = 0;
 //debug
 int adding_to_barrier = 0;
+
+double sum_urgent_response_time = 0;
+double urgent_tasks_finished = 0;
 
 void Process_RequestMemory(int, double), Process_RequestCPU(int, double),   /****  Event procedures      ****/
 	Process_ReleaseCPU(int, double), Process_RequestDisk(int, double), Process_ReleaseDisk(int, double);   
@@ -397,9 +401,21 @@ void Process_ReleaseCPU(int process, double time){
 		//interactive processes:  need to make a new process at the monitor
 		else{
 			//cout<<"tcpu, interactive"<<endl;
-			task[process].tcpu=random_exponential(TCPU);
 			sum_response_time+=time-task[process].start;
 			finished_tasks++;
+
+			if(task[process].urgent) {
+				sum_urgent_response_time+=time-task[process].start;
+				urgent_tasks_finished++;
+			}
+
+			task[process].tcpu=random_exponential(TCPU);
+			if(task[process].tcpu < 50) {
+				task[process].urgent = true;
+			}
+			else {
+				task[process].urgent = false;
+			}
 			/**** Create a new task                                          ****/
 			task[process].tquantum  =   TQuantum;
 			task[process].tinterrequest = random_exponential(TInterRequest);
@@ -599,6 +615,12 @@ void Process_ReleaseDisk(int process, double time)
 			if(i < N){
 				task[i].parallel = false;
 				task[i].tcpu=random_exponential(TCPU);
+				if(task[i].tcpu < 50) {
+					task[i].urgent = true;
+				}
+				else {
+					task[i].urgent = false;
+				}
 				task[i].start=random_exponential(TThink);
 			}
 			else{ //these are parallel processes
@@ -713,6 +735,7 @@ void Process_ReleaseDisk(int process, double time)
 
 		cout << "Number of times releasing parallel processing:  " << barrier_times << " " << TTotal/barrier_times << endl;
 
+		cout << "average urgent response time " << sum_urgent_response_time/urgent_tasks_finished << endl;
 	}
 
 	/*------------------------------ Random Number Generator --------------------------*/
