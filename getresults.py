@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 
 
 n = "30"
-time = "500000"
+time = "50000"
 
 ups1 = []
 ups2 = []
@@ -30,8 +30,8 @@ for MPL in range(10,21):
 
 MPL = range(10,21)
 
-fig = plt.figure()
-fig.suptitle("N = " + n)
+fig1 = plt.figure()
+fig1.suptitle("N = " + n)
 plt.title("CPU utilization by user processes")
 plt.xlabel("MPL")
 plt.ylabel("CPUps")
@@ -42,22 +42,22 @@ p4, = plt.plot(MPL, ups4)
 p_ave, = plt.plot(MPL, ups_ave)
 plt.legend([p1, p2, p3, p4, p_ave], ["Ups1", "Ups2", "Ups3", "Ups4", "Ups_ave"])
 
-plt.figure()
-fig.suptitle("N = " + n)
+fig2 = plt.figure()
+fig2.suptitle("N = " + n)
 plt.title("CPU utilization while queues empty")
 plt.xlabel("MPL")
 plt.ylabel("Uwi")
 plt.plot(MPL, uwi)
 
-plt.figure()
-fig.suptitle("N = " + n)
+fig3 = plt.figure()
+fig3.suptitle("N = " + n)
 plt.title("CPU utilization while disk queue non-empty")
 plt.xlabel("MPL")
 plt.ylabel("Uwd")
 plt.plot(MPL, uwd)
 
-plt.figure()
-fig.suptitle("N = " + n)
+fig4 = plt.figure()
+fig4.suptitle("N = " + n)
 plt.title("Average waiting time in eligible queue")
 plt.xlabel("MPL")
 plt.ylabel("te")
