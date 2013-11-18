@@ -1,5 +1,5 @@
 import subprocess
-import matplotlib.plot as plt
+import matplotlib.pyplot as plt
 
 
 n = "30"
