@@ -1,5 +1,5 @@
 import subprocess
-import matlib.plot as plt
+import matplotlib.plot as plt
 
 
 n = "30"
@@ -17,7 +17,7 @@ te = []
 for MPL in range(10,21):
     #output should be in the following format:
     #Ups1 Ups2 Ups3 Ups4 Ups_ave Uwd Uwi te
-    output = subprocess.check_output(["./simulator", str(MPL), n, time, "arg"])
+    output = subprocess.check_output(["./sim", str(MPL), n, time, "arg"])
     output = output.split(" ")
     ups1.append(output[0])
     ups2.append(output[1])
